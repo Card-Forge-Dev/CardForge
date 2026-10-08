@@ -1,1394 +1,2175 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>CardForge</title>
-
-<style>
-
-* {
-    box-sizing: border-box;
-}
-
-body {
-    margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background: #111;
-    color: #eee;
-}
-
-/* HEADER */
-
-.header {
-    height: 64px;
-    border-bottom: 1px solid #2a2a2a;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 28px;
-    background: #151515;
-}
-
-.logo {
-    font-size: 21px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-}
-
-.version {
-    color: #888;
-    font-size: 13px;
-    margin-left: 8px;
-    font-weight: normal;
-}
-
-.status {
-    font-size: 13px;
-    color: #7fd88b;
-}
-
-/* MAIN */
-
-.container {
-    width: min(1100px, calc(100% - 32px));
-    margin: 35px auto 70px;
-}
-
-.intro {
-    margin-bottom: 28px;
-}
-
-.intro h1 {
-    margin: 0 0 8px;
-    font-size: 30px;
-    font-weight: 700;
-}
-
-.intro p {
-    margin: 0;
-    color: #999;
-    font-size: 15px;
-}
-
-/* UPLOAD */
-
-.upload-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-}
-
-.upload-box {
-    background: #181818;
-    border: 1px solid #303030;
-    border-radius: 8px;
-    padding: 20px;
-}
-
-.upload-box h2 {
-    font-size: 17px;
-    margin: 0 0 5px;
-}
-
-.upload-box p {
-    margin: 0 0 17px;
-    color: #888;
-    font-size: 13px;
-}
-
-.preview {
-    height: 310px;
-    border: 1px dashed #444;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    background: #121212;
-}
-
-.preview span {
-    color: #666;
-    font-size: 14px;
-}
-
-.preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.file-input {
-    display: none;
-}
-
-.upload-button {
-    margin-top: 14px;
-    width: 100%;
-    padding: 11px;
-    border: 1px solid #444;
-    border-radius: 5px;
-    background: #252525;
-    color: #eee;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.upload-button:hover {
-    background: #303030;
-}
-
-/* ANALYZE */
-
-.analyze-area {
-    margin-top: 20px;
-    display: flex;
-    justify-content: flex-end;
-}
-
-.analyze-button {
-    border: none;
-    border-radius: 5px;
-    padding: 12px 24px;
-    background: #eee;
-    color: #111;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.analyze-button:hover {
-    background: #d7d7d7;
-}
-
-.analyze-button:disabled {
-    opacity: .45;
-    cursor: not-allowed;
-}
-
-/* MESSAGE */
-
-.message {
-    margin-top: 18px;
-    padding: 13px 15px;
-    border-radius: 6px;
-    background: #181818;
-    border: 1px solid #2c2c2c;
-    color: #aaa;
-    font-size: 14px;
-    display: none;
-}
-
-/* RESULTS */
-
-.results {
-    margin-top: 40px;
-    display: none;
-}
-
-.results-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.results-header h2 {
-    margin: 0;
-    font-size: 21px;
-}
-
-.confidence {
-    font-size: 13px;
-    color: #8bd19a;
-}
-
-.result-card {
-    background: #181818;
-    border: 1px solid #303030;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.main-result {
-    padding: 22px;
-    border-bottom: 1px solid #2b2b2b;
-}
-
-.card-name {
-    font-size: 25px;
-    font-weight: 700;
-    margin-bottom: 8px;
-}
-
-.description {
-    color: #999;
-    line-height: 1.5;
-    font-size: 14px;
-}
-
-/* DETAILS */
-
-.details {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-}
-
-.detail {
-    padding: 16px 20px;
-    border-right: 1px solid #2b2b2b;
-    border-bottom: 1px solid #2b2b2b;
-}
-
-.detail:nth-child(3n) {
-    border-right: none;
-}
-
-.detail-label {
-    color: #777;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    margin-bottom: 5px;
-}
-
-.detail-value {
-    font-size: 14px;
-    color: #eee;
-    word-break: break-word;
-}
-
-/* EVIDENCE */
-
-.evidence {
-    padding: 20px;
-}
-
-.evidence h3 {
-    font-size: 15px;
-    margin: 0 0 12px;
-}
-
-.evidence ul {
-    margin: 0;
-    padding-left: 18px;
-    color: #999;
-}
-
-.evidence li {
-    margin-bottom: 7px;
-    font-size: 13px;
-}
-
-/* SEARCH */
-
-.search-box {
-    margin-top: 20px;
-    padding: 18px;
-    background: #151515;
-    border: 1px solid #292929;
-    border-radius: 7px;
-}
-
-.search-box h3 {
-    margin: 0 0 8px;
-    font-size: 15px;
-}
-
-.search-query {
-    color: #aaa;
-    font-size: 13px;
-    line-height: 1.5;
-}
-
-/* MARKET */
-
-.market-section {
-    margin-top: 30px;
-    padding: 22px;
-    border: 1px solid #303030;
-    border-radius: 8px;
-    background: #181818;
-}
-
-.market-section h2 {
-    margin: 0 0 6px;
-    font-size: 19px;
-}
-
-.market-section p {
-    margin: 0;
-    color: #777;
-    font-size: 13px;
-}
-
-/* FOOTER */
-
-.footer {
-    text-align: center;
-    color: #555;
-    font-size: 12px;
-    margin-top: 45px;
-}
-
-/* TABLET */
-
-@media (max-width: 750px) {
-
-    .upload-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .details {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .detail:nth-child(3n) {
-        border-right: 1px solid #2b2b2b;
-    }
-
-    .detail:nth-child(2n) {
-        border-right: none;
-    }
-
-    .preview {
-        height: 260px;
-    }
-
-    .header {
-        padding: 0 16px;
-    }
-}
-
-/* PHONE */
-
-@media (max-width: 480px) {
-
-    .container {
-        width: calc(100% - 20px);
-        margin-top: 25px;
-    }
-
-    .intro h1 {
-        font-size: 25px;
-    }
-
-    .details {
-        grid-template-columns: 1fr;
-    }
-
-    .detail {
-        border-right: none !important;
-    }
-
-    .preview {
-        height: 300px;
-    }
-
-    .analyze-area {
-        justify-content: stretch;
-    }
-
-    .analyze-button {
-        width: 100%;
-    }
-}
-
-</style>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CardForge</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Roboto,
+                Helvetica,
+                Arial,
+                sans-serif;
+
+            background:
+                #030303;
+
+            color: #ffffff;
+
+            min-height: 100vh;
+
+            overflow-x: hidden;
+        }
+
+
+        /* =====================================================
+           BACKGROUND
+        ===================================================== */
+
+        body::before {
+            content: "";
+
+            position: fixed;
+
+            inset: 0;
+
+            pointer-events: none;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    transparent 0%,
+                    transparent 44%,
+                    rgba(0, 102, 255, 0.08) 45%,
+                    transparent 46%
+                ),
+
+                linear-gradient(
+                    315deg,
+                    transparent 0%,
+                    transparent 45%,
+                    rgba(0, 102, 255, 0.07) 46%,
+                    transparent 47%
+                );
+
+            z-index: -2;
+        }
+
+
+        body::after {
+            content: "";
+
+            position: fixed;
+
+            width: 500px;
+            height: 500px;
+
+            top: -250px;
+            left: -250px;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(0, 102, 255, 0.12),
+                    transparent 70%
+                );
+
+            pointer-events: none;
+
+            z-index: -1;
+        }
+
+
+        /* =====================================================
+           PAGE
+        ===================================================== */
+
+        .page {
+            width: 100%;
+
+            max-width: 1100px;
+
+            margin: 0 auto;
+
+            padding:
+                50px 22px 80px;
+        }
+
+
+        /* =====================================================
+           BRAND
+        ===================================================== */
+
+        .brand {
+            text-align: center;
+
+            margin-bottom: 38px;
+        }
+
+
+        .cf-logo {
+            width: 112px;
+            height: 112px;
+
+            margin: 0 auto 18px;
+
+            border-radius: 50%;
+
+            border:
+                3px solid #087cff;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            background:
+                radial-gradient(
+                    circle at center,
+                    #111111,
+                    #030303 72%
+                );
+
+            box-shadow:
+                0 0 20px rgba(0, 110, 255, 0.18);
+
+            color: white;
+
+            font-family:
+                "Brush Script MT",
+                "Segoe Script",
+                cursive;
+
+            font-size: 52px;
+
+            font-weight: 600;
+
+            line-height: 1;
+
+            transform: rotate(-4deg);
+        }
+
+
+        .brand-name {
+            font-family:
+                "Brush Script MT",
+                "Segoe Script",
+                cursive;
+
+            font-size:
+                clamp(58px, 9vw, 92px);
+
+            line-height: 0.9;
+
+            color: #ffffff;
+
+            text-shadow:
+                0 0 18px rgba(255,255,255,0.05);
+
+            letter-spacing: -2px;
+        }
+
+
+        .tagline {
+            margin-top: 28px;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            gap: 22px;
+
+            color: #ffffff;
+
+            font-size: 15px;
+
+            letter-spacing: 5px;
+
+            font-weight: 600;
+        }
+
+
+        .tagline span {
+            color: #087cff;
+
+            font-size: 20px;
+
+            letter-spacing: 0;
+        }
+
+
+        .intro {
+            margin:
+                30px auto 0;
+
+            max-width: 650px;
+
+            color: #9db8d8;
+
+            font-size: 17px;
+
+            line-height: 1.6;
+
+            text-align: center;
+        }
+
+
+        /* =====================================================
+           SCANNER
+        ===================================================== */
+
+        .scanner {
+            margin-top: 55px;
+
+            border:
+                1px solid #087cff;
+
+            border-radius: 24px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(13, 13, 13, 0.98),
+                    rgba(5, 8, 14, 0.98)
+                );
+
+            padding: 35px;
+
+            box-shadow:
+                0 0 35px rgba(0, 95, 255, 0.08);
+        }
+
+
+        .scanner-heading {
+            display: flex;
+
+            align-items: center;
+
+            gap: 18px;
+
+            margin-bottom: 28px;
+        }
+
+
+        .camera-icon {
+            font-size: 38px;
+
+            color: #087cff;
+        }
+
+
+        .scanner-heading h2 {
+            font-size: 29px;
+
+            margin-bottom: 5px;
+        }
+
+
+        .scanner-heading p {
+            color: #8ea9ca;
+
+            font-size: 15px;
+        }
+
+
+        /* =====================================================
+           UPLOADS
+        ===================================================== */
+
+        .upload-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, 1fr);
+
+            gap: 25px;
+        }
+
+
+        .upload-box {
+            position: relative;
+
+            min-height: 275px;
+
+            border:
+                1px dashed #176ecb;
+
+            border-radius: 16px;
+
+            background:
+                rgba(5, 10, 18, 0.8);
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            text-align: center;
+
+            cursor: pointer;
+
+            overflow: hidden;
+
+            transition:
+                border-color 0.2s,
+                background 0.2s,
+                transform 0.2s;
+        }
+
+
+        .upload-box:hover {
+            border-color: #2490ff;
+
+            background:
+                rgba(8, 18, 32, 0.95);
+
+            transform: translateY(-2px);
+        }
+
+
+        .upload-content {
+            padding: 25px;
+        }
+
+
+        .upload-icon {
+            font-size: 45px;
+
+            color: #087cff;
+
+            margin-bottom: 15px;
+        }
+
+
+        .upload-title {
+            font-size: 20px;
+
+            font-weight: 700;
+
+            margin-bottom: 8px;
+        }
+
+
+        .upload-subtitle {
+            color: #7fa4ce;
+
+            font-size: 15px;
+
+            line-height: 1.5;
+        }
+
+
+        .upload-input {
+            display: none;
+        }
+
+
+        .preview {
+            position: absolute;
+
+            inset: 0;
+
+            width: 100%;
+            height: 100%;
+
+            object-fit: contain;
+
+            padding: 12px;
+
+            background: #050505;
+
+            display: none;
+        }
+
+
+        .upload-box.has-image .preview {
+            display: block;
+        }
+
+
+        .upload-box.has-image .upload-content {
+            display: none;
+        }
+
+
+        .image-label {
+            position: absolute;
+
+            left: 12px;
+            top: 12px;
+
+            padding:
+                6px 10px;
+
+            border-radius: 8px;
+
+            background:
+                rgba(0, 0, 0, 0.8);
+
+            border:
+                1px solid #087cff;
+
+            font-size: 12px;
+
+            z-index: 2;
+        }
+
+
+        /* =====================================================
+           ANALYZE BUTTON
+        ===================================================== */
+
+        .analyze-button {
+            width: 100%;
+
+            margin-top: 30px;
+
+            border: none;
+
+            border-radius: 50px;
+
+            padding:
+                18px 25px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    #006eff,
+                    #087cff
+                );
+
+            color: white;
+
+            font-size: 20px;
+
+            font-weight: 700;
+
+            cursor: pointer;
+
+            box-shadow:
+                0 8px 30px rgba(0, 110, 255, 0.18);
+
+            transition:
+                transform 0.2s,
+                box-shadow 0.2s,
+                opacity 0.2s;
+        }
+
+
+        .analyze-button:hover {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 12px 35px rgba(0, 110, 255, 0.3);
+        }
+
+
+        .analyze-button:disabled {
+            opacity: 0.5;
+
+            cursor: not-allowed;
+
+            transform: none;
+        }
+
+
+        /* =====================================================
+           STATUS
+        ===================================================== */
+
+        .status {
+            display: none;
+
+            margin-top: 20px;
+
+            padding: 15px 18px;
+
+            border-radius: 12px;
+
+            text-align: center;
+
+            color: #9fc9ff;
+
+            background:
+                rgba(0, 100, 255, 0.08);
+
+            border:
+                1px solid rgba(0, 110, 255, 0.3);
+        }
+
+
+        .status.visible {
+            display: block;
+        }
+
+
+        .status.error {
+            color: #ff8c8c;
+
+            border-color:
+                rgba(255, 70, 70, 0.35);
+
+            background:
+                rgba(255, 50, 50, 0.07);
+        }
+
+
+        /* =====================================================
+           RESULTS
+        ===================================================== */
+
+        #results {
+            display: none;
+
+            margin-top: 55px;
+        }
+
+
+        .results-title {
+            text-align: center;
+
+            font-size: 34px;
+
+            margin-bottom: 8px;
+        }
+
+
+        .results-subtitle {
+            text-align: center;
+
+            color: #7fa4ce;
+
+            margin-bottom: 30px;
+        }
+
+
+        .result-card {
+            border:
+                1px solid #163a63;
+
+            border-radius: 18px;
+
+            background:
+                #080b10;
+
+            padding: 28px;
+
+            margin-bottom: 25px;
+        }
+
+
+        .result-card h3 {
+            color: #ffffff;
+
+            font-size: 23px;
+
+            margin-bottom: 20px;
+        }
+
+
+        /* =====================================================
+           CARD IDENTITY
+        ===================================================== */
+
+        .identity-header {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: flex-start;
+
+            gap: 20px;
+
+            margin-bottom: 25px;
+        }
+
+
+        .identity-name {
+            font-size: 30px;
+
+            font-weight: 800;
+
+            color: white;
+        }
+
+
+        .identity-type {
+            margin-top: 5px;
+
+            color: #7da7d4;
+        }
+
+
+        .confidence {
+            min-width: 100px;
+
+            text-align: center;
+
+            padding: 12px;
+
+            border-radius: 12px;
+
+            border:
+                1px solid #087cff;
+
+            background:
+                rgba(0, 110, 255, 0.08);
+        }
+
+
+        .confidence-number {
+            display: block;
+
+            font-size: 24px;
+
+            font-weight: 800;
+
+            color: #087cff;
+        }
+
+
+        .confidence-label {
+            color: #7998b9;
+
+            font-size: 11px;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1px;
+        }
+
+
+        /* =====================================================
+           DETAILS GRID
+        ===================================================== */
+
+        .details-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 12px;
+        }
+
+
+        .detail {
+            padding: 14px;
+
+            border-radius: 10px;
+
+            background:
+                #0c1118;
+
+            border:
+                1px solid #142638;
+        }
+
+
+        .detail-label {
+            display: block;
+
+            color: #6385a8;
+
+            font-size: 11px;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1px;
+
+            margin-bottom: 5px;
+        }
+
+
+        .detail-value {
+            color: #ffffff;
+
+            font-size: 14px;
+
+            font-weight: 600;
+
+            word-break: break-word;
+        }
+
+
+        /* =====================================================
+           EVIDENCE
+        ===================================================== */
+
+        .evidence-list {
+            list-style: none;
+        }
+
+
+        .evidence-list li {
+            padding:
+                11px 0 11px 25px;
+
+            color: #a8bdd6;
+
+            border-bottom:
+                1px solid #101b27;
+
+            position: relative;
+        }
+
+
+        .evidence-list li::before {
+            content: "✓";
+
+            position: absolute;
+
+            left: 0;
+
+            color: #087cff;
+
+            font-weight: 800;
+        }
+
+
+        /* =====================================================
+           SEARCH QUERY
+        ===================================================== */
+
+        .search-query {
+            padding: 15px;
+
+            border-radius: 10px;
+
+            background:
+                #05080d;
+
+            border:
+                1px solid #163452;
+
+            color: #9fc5ee;
+
+            word-break: break-word;
+
+            font-family:
+                monospace;
+
+            font-size: 13px;
+        }
+
+
+        /* =====================================================
+           EBAY
+        ===================================================== */
+
+        .ebay-heading {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            gap: 15px;
+
+            margin-bottom: 22px;
+        }
+
+
+        .ebay-badge {
+            padding:
+                7px 12px;
+
+            border-radius: 20px;
+
+            background:
+                #0d1117;
+
+            border:
+                1px solid #087cff;
+
+            color: #087cff;
+
+            font-size: 12px;
+
+            font-weight: 700;
+        }
+
+
+        .listing-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 18px;
+        }
+
+
+        .listing {
+            border:
+                1px solid #182b3f;
+
+            border-radius: 14px;
+
+            overflow: hidden;
+
+            background:
+                #070a0f;
+
+            transition:
+                transform 0.2s,
+                border-color 0.2s;
+        }
+
+
+        .listing:hover {
+            transform: translateY(-3px);
+
+            border-color:
+                #087cff;
+        }
+
+
+        .listing-image-wrap {
+            height: 220px;
+
+            background:
+                #020304;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+        }
+
+
+        .listing-image {
+            width: 100%;
+
+            height: 100%;
+
+            object-fit: contain;
+
+            padding: 10px;
+        }
+
+
+        .listing-info {
+            padding: 15px;
+        }
+
+
+        .listing-title {
+            font-size: 14px;
+
+            line-height: 1.4;
+
+            color: white;
+
+            min-height: 40px;
+
+            display: -webkit-box;
+
+            -webkit-line-clamp: 2;
+
+            -webkit-box-orient: vertical;
+
+            overflow: hidden;
+        }
+
+
+        .listing-price {
+            margin-top: 12px;
+
+            font-size: 23px;
+
+            font-weight: 800;
+
+            color: #ffffff;
+        }
+
+
+        .listing-condition {
+            margin-top: 5px;
+
+            color: #7191b0;
+
+            font-size: 12px;
+        }
+
+
+        .listing-link {
+            display: block;
+
+            margin-top: 14px;
+
+            text-align: center;
+
+            padding: 10px;
+
+            border-radius: 8px;
+
+            background:
+                #087cff;
+
+            color: white;
+
+            text-decoration: none;
+
+            font-size: 13px;
+
+            font-weight: 700;
+        }
+
+
+        .listing-link:hover {
+            background:
+                #2190ff;
+        }
+
+
+        .no-listings {
+            padding: 30px;
+
+            text-align: center;
+
+            color: #7792ad;
+
+            border:
+                1px dashed #1b354f;
+
+            border-radius: 12px;
+        }
+
+
+        /* =====================================================
+           FEATURES
+        ===================================================== */
+
+        .features {
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 25px;
+
+            margin-top: 60px;
+        }
+
+
+        .feature {
+            text-align: center;
+
+            padding: 10px;
+        }
+
+
+        .feature-icon {
+            width: 65px;
+            height: 65px;
+
+            border-radius: 50%;
+
+            border:
+                2px solid #087cff;
+
+            margin:
+                0 auto 17px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            color: #087cff;
+
+            font-size: 27px;
+        }
+
+
+        .feature h3 {
+            font-size: 16px;
+
+            margin-bottom: 8px;
+        }
+
+
+        .feature p {
+            color: #7190ae;
+
+            font-size: 13px;
+
+            line-height: 1.5;
+        }
+
+
+        /* =====================================================
+           FOOTER
+        ===================================================== */
+
+        footer {
+            margin-top: 65px;
+
+            padding-top: 25px;
+
+            border-top:
+                1px solid #17304d;
+
+            text-align: center;
+
+            color: #087cff;
+
+            letter-spacing: 5px;
+
+            font-size: 12px;
+        }
+
+
+        /* =====================================================
+           MOBILE
+        ===================================================== */
+
+        @media (max-width: 800px) {
+
+            .page {
+                padding:
+                    35px 15px 60px;
+            }
+
+
+            .scanner {
+                padding: 20px;
+
+                margin-top: 40px;
+            }
+
+
+            .upload-grid {
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .upload-box {
+                min-height: 240px;
+            }
+
+
+            .details-grid {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+
+            .listing-grid {
+                grid-template-columns:
+                    repeat(2, 1fr);
+            }
+
+
+            .features {
+                grid-template-columns:
+                    repeat(2, 1fr);
+
+                gap: 30px 10px;
+            }
+
+
+            .identity-header {
+                flex-direction: column;
+            }
+
+
+            .confidence {
+                width: 100%;
+            }
+
+
+            .brand-name {
+                font-size: 58px;
+            }
+
+
+            .tagline {
+                gap: 10px;
+
+                font-size: 11px;
+
+                letter-spacing: 3px;
+            }
+
+
+            .intro {
+                font-size: 15px;
+            }
+
+        }
+
+
+        @media (max-width: 500px) {
+
+            .listing-grid {
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .details-grid {
+                grid-template-columns:
+                    1fr 1fr;
+            }
+
+
+            .cf-logo {
+                width: 92px;
+                height: 92px;
+
+                font-size: 43px;
+            }
+
+
+            .brand-name {
+                font-size: 54px;
+            }
+
+
+            .scanner-heading h2 {
+                font-size: 24px;
+            }
+
+
+            .scanner-heading p {
+                font-size: 13px;
+            }
+
+        }
+
+    </style>
 </head>
+
 
 <body>
 
-<header class="header">
-
-    <div>
-        <span class="logo">CardForge</span>
-        <span class="version">V7</span>
-    </div>
-
-    <div class="status">
-        ● Ready
-    </div>
-
-</header>
+<div class="page">
 
 
-<main class="container">
+    <!-- =====================================================
+         BRAND
+    ====================================================== -->
 
-    <section class="intro">
+    <section class="brand">
 
-        <h1>Card Scanner</h1>
+        <div class="cf-logo">
+            CF
+        </div>
 
-        <p>
-            Upload the front and back of a card to identify it.
+        <div class="brand-name">
+            CardForge
+        </div>
+
+        <div class="tagline">
+            IDENTIFY
+            <span>•</span>
+            SEARCH
+            <span>•</span>
+            FIND VALUE
+        </div>
+
+        <p class="intro">
+            Scan your collectible cards and instantly get
+            identification, active eBay listings, prices,
+            and more.
         </p>
 
     </section>
 
 
-    <!-- IMAGE UPLOADS -->
+    <!-- =====================================================
+         SCANNER
+    ====================================================== -->
 
-    <section class="upload-grid">
+    <section class="scanner">
 
-        <!-- FRONT -->
+        <div class="scanner-heading">
 
-        <div class="upload-box">
-
-            <h2>Front of Card</h2>
-
-            <p>
-                Upload a clear picture of the front.
-            </p>
-
-            <div
-                class="preview"
-                id="frontPreview"
-            >
-                <span>
-                    No image selected
-                </span>
+            <div class="camera-icon">
+                ◉
             </div>
 
-            <input
-                type="file"
-                id="frontInput"
-                class="file-input"
-                accept="image/*"
-            >
+            <div>
+                <h2>
+                    Scan Your Card
+                </h2>
 
-            <button
-                class="upload-button"
-                onclick="document.getElementById('frontInput').click()"
-            >
-                Choose Front Image
-            </button>
+                <p>
+                    Upload clear photos of both the front and back
+                    of your card.
+                </p>
+            </div>
 
         </div>
 
 
-        <!-- BACK -->
+        <div class="upload-grid">
 
-        <div class="upload-box">
 
-            <h2>Back of Card</h2>
+            <!-- FRONT -->
 
-            <p>
-                Upload a clear picture of the back.
-            </p>
-
-            <div
-                class="preview"
-                id="backPreview"
+            <label
+                class="upload-box"
+                id="frontBox"
             >
-                <span>
-                    No image selected
+
+                <input
+                    class="upload-input"
+                    id="frontInput"
+                    type="file"
+                    accept="image/*"
+                >
+
+                <span class="image-label">
+                    FRONT
                 </span>
-            </div>
 
-            <input
-                type="file"
-                id="backInput"
-                class="file-input"
-                accept="image/*"
+                <div class="upload-content">
+
+                    <div class="upload-icon">
+                        ▧
+                    </div>
+
+                    <div class="upload-title">
+                        Front of Card
+                    </div>
+
+                    <div class="upload-subtitle">
+                        Tap to upload
+                        <br>
+                        JPG, PNG
+                    </div>
+
+                </div>
+
+                <img
+                    class="preview"
+                    id="frontPreview"
+                    alt="Front preview"
+                >
+
+            </label>
+
+
+            <!-- BACK -->
+
+            <label
+                class="upload-box"
+                id="backBox"
             >
 
-            <button
-                class="upload-button"
-                onclick="document.getElementById('backInput').click()"
-            >
-                Choose Back Image
-            </button>
+                <input
+                    class="upload-input"
+                    id="backInput"
+                    type="file"
+                    accept="image/*"
+                >
+
+                <span class="image-label">
+                    BACK
+                </span>
+
+                <div class="upload-content">
+
+                    <div class="upload-icon">
+                        ▧
+                    </div>
+
+                    <div class="upload-title">
+                        Back of Card
+                    </div>
+
+                    <div class="upload-subtitle">
+                        Tap to upload
+                        <br>
+                        JPG, PNG
+                    </div>
+
+                </div>
+
+                <img
+                    class="preview"
+                    id="backPreview"
+                    alt="Back preview"
+                >
+
+            </label>
 
         </div>
+
+
+        <button
+            class="analyze-button"
+            id="analyzeButton"
+        >
+            ✦ &nbsp; Analyze Card
+        </button>
+
+
+        <div
+            class="status"
+            id="status"
+        ></div>
 
     </section>
 
 
-    <!-- ANALYZE BUTTON -->
+    <!-- =====================================================
+         RESULTS
+    ====================================================== -->
 
-    <div class="analyze-area">
+    <section id="results">
 
-        <button
-            id="analyzeButton"
-            class="analyze-button"
-            disabled
-        >
-            Analyze Card
-        </button>
+        <h2 class="results-title">
+            Card Analysis
+        </h2>
 
-    </div>
-
-
-    <!-- STATUS MESSAGE -->
-
-    <div
-        id="message"
-        class="message"
-    ></div>
+        <p class="results-subtitle">
+            CardForge identified your card and searched active
+            eBay listings.
+        </p>
 
 
-    <!-- RESULTS -->
+        <!-- CARD ID -->
 
-    <section
-        id="results"
-        class="results"
-    >
+        <div class="result-card">
 
-        <div class="results-header">
+            <div class="identity-header">
 
-            <h2>
-                Identification
-            </h2>
+                <div>
+
+                    <div
+                        class="identity-name"
+                        id="cardName"
+                    >
+                        Unknown
+                    </div>
+
+                    <div
+                        class="identity-type"
+                        id="cardType"
+                    >
+                        Unknown
+                    </div>
+
+                </div>
+
+
+                <div class="confidence">
+
+                    <span
+                        class="confidence-number"
+                        id="confidence"
+                    >
+                        0%
+                    </span>
+
+                    <span class="confidence-label">
+                        Confidence
+                    </span>
+
+                </div>
+
+            </div>
+
 
             <div
-                id="confidence"
-                class="confidence"
+                class="details-grid"
+                id="detailsGrid"
             ></div>
 
         </div>
 
 
+        <!-- EVIDENCE -->
+
         <div class="result-card">
 
-
-            <!-- MAIN RESULT -->
-
-            <div class="main-result">
-
-                <div
-                    id="cardName"
-                    class="card-name"
-                >
-                    Unknown Card
-                </div>
-
-                <div
-                    id="description"
-                    class="description"
-                ></div>
-
-            </div>
-
-
-            <!-- CARD DETAILS -->
-
-            <div class="details">
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Type
-                    </div>
-
-                    <div
-                        id="cardType"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Category
-                    </div>
-
-                    <div
-                        id="category"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Player / Character
-                    </div>
-
-                    <div
-                        id="player"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Sport
-                    </div>
-
-                    <div
-                        id="sport"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Team
-                    </div>
-
-                    <div
-                        id="team"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Year
-                    </div>
-
-                    <div
-                        id="year"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Manufacturer
-                    </div>
-
-                    <div
-                        id="manufacturer"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Set
-                    </div>
-
-                    <div
-                        id="set"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Card Number
-                    </div>
-
-                    <div
-                        id="cardNumber"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Rarity
-                    </div>
-
-                    <div
-                        id="rarity"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Parallel / Variant
-                    </div>
-
-                    <div
-                        id="parallel"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Edition
-                    </div>
-
-                    <div
-                        id="edition"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Language
-                    </div>
-
-                    <div
-                        id="language"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Serial Number
-                    </div>
-
-                    <div
-                        id="serialNumber"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Rookie
-                    </div>
-
-                    <div
-                        id="rookie"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        First Edition
-                    </div>
-
-                    <div
-                        id="firstEdition"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Autograph
-                    </div>
-
-                    <div
-                        id="autograph"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Memorabilia
-                    </div>
-
-                    <div
-                        id="memorabilia"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Graded
-                    </div>
-
-                    <div
-                        id="graded"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Grading Company
-                    </div>
-
-                    <div
-                        id="gradingCompany"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-                <div class="detail">
-                    <div class="detail-label">
-                        Grade
-                    </div>
-
-                    <div
-                        id="grade"
-                        class="detail-value"
-                    >
-                        Unknown
-                    </div>
-                </div>
-
-
-            </div>
-
-
-            <!-- EVIDENCE -->
-
-            <div class="evidence">
-
-                <h3>
-                    Identification Evidence
-                </h3>
-
-                <ul id="evidenceList"></ul>
-
-            </div>
-
+            <h3>
+                Identification Evidence
+            </h3>
+
+            <ul
+                class="evidence-list"
+                id="evidenceList"
+            ></ul>
 
         </div>
 
 
         <!-- SEARCH QUERY -->
 
-        <div class="search-box">
+        <div class="result-card">
 
             <h3>
-                Search Query
+                Marketplace Search
             </h3>
 
             <div
-                id="searchQuery"
                 class="search-query"
-            ></div>
+                id="searchQuery"
+            >
+                —
+            </div>
 
         </div>
 
 
-        <!-- MARKET -->
+        <!-- EBAY -->
 
-        <div class="market-section">
+        <div class="result-card">
 
-            <h2>
-                Market Listings
-            </h2>
+            <div class="ebay-heading">
 
-            <p>
-                eBay active listings will appear here once the eBay API is connected.
-            </p>
+                <h3>
+                    eBay Active Listings
+                </h3>
+
+                <div class="ebay-badge">
+                    LIVE SEARCH
+                </div>
+
+            </div>
+
+
+            <div
+                class="listing-grid"
+                id="listingGrid"
+            ></div>
 
         </div>
 
     </section>
 
 
-    <div class="footer">
-        CardForge • Universal collectible card scanner
-    </div>
+    <!-- =====================================================
+         FEATURES
+    ====================================================== -->
 
-</main>
+    <section class="features">
+
+
+        <div class="feature">
+
+            <div class="feature-icon">
+                ▧
+            </div>
+
+            <h3>
+                AI Identification
+            </h3>
+
+            <p>
+                Get detailed card information
+                from both sides.
+            </p>
+
+        </div>
+
+
+        <div class="feature">
+
+            <div class="feature-icon">
+                ⌕
+            </div>
+
+            <h3>
+                eBay Search
+            </h3>
+
+            <p>
+                Find current listings,
+                prices and more.
+            </p>
+
+        </div>
+
+
+        <div class="feature">
+
+            <div class="feature-icon">
+                $
+            </div>
+
+            <h3>
+                Live Prices
+            </h3>
+
+            <p>
+                See current asking
+                prices from listings.
+            </p>
+
+        </div>
+
+
+        <div class="feature">
+
+            <div class="feature-icon">
+                ↗
+            </div>
+
+            <h3>
+                Direct Links
+            </h3>
+
+            <p>
+                Click directly through
+                to eBay listings.
+            </p>
+
+        </div>
+
+
+    </section>
+
+
+    <footer>
+        YOUR CARDS. OUR TECHNOLOGY.
+    </footer>
+
+
+</div>
 
 
 <script>
 
-/*
-========================================
-CARDFORGE FRONTEND
-========================================
-*/
+    /* =====================================================
+       ELEMENTS
+    ===================================================== */
 
-let frontImage = null;
-let backImage = null;
-
-
-/* ELEMENTS */
-
-const frontInput =
-    document.getElementById("frontInput");
-
-const backInput =
-    document.getElementById("backInput");
-
-const frontPreview =
-    document.getElementById("frontPreview");
-
-const backPreview =
-    document.getElementById("backPreview");
-
-const analyzeButton =
-    document.getElementById("analyzeButton");
-
-const message =
-    document.getElementById("message");
-
-const results =
-    document.getElementById("results");
-
-
-/* IMAGE INPUT */
-
-frontInput.addEventListener(
-    "change",
-    function () {
-
-        handleImage(
-            this.files[0],
-            "front"
+    const frontInput =
+        document.getElementById(
+            "frontInput"
         );
 
-    }
-);
-
-
-backInput.addEventListener(
-    "change",
-    function () {
-
-        handleImage(
-            this.files[0],
-            "back"
+    const backInput =
+        document.getElementById(
+            "backInput"
         );
 
-    }
-);
+    const frontBox =
+        document.getElementById(
+            "frontBox"
+        );
+
+    const backBox =
+        document.getElementById(
+            "backBox"
+        );
+
+    const frontPreview =
+        document.getElementById(
+            "frontPreview"
+        );
+
+    const backPreview =
+        document.getElementById(
+            "backPreview"
+        );
+
+    const analyzeButton =
+        document.getElementById(
+            "analyzeButton"
+        );
+
+    const status =
+        document.getElementById(
+            "status"
+        );
+
+    const results =
+        document.getElementById(
+            "results"
+        );
 
 
-/* IMAGE HANDLER */
+    let frontImage =
+        null;
 
-function handleImage(file, side) {
-
-    if (!file) {
-        return;
-    }
-
-    const reader =
-        new FileReader();
+    let backImage =
+        null;
 
 
-    reader.onload =
-        function (event) {
+    /* =====================================================
+       IMAGE CONVERSION
+    ===================================================== */
 
-            if (side === "front") {
+    function readImage(file, callback) {
 
-                frontImage =
-                    event.target.result;
+        const reader =
+            new FileReader();
 
-                frontPreview.innerHTML =
-                    `<img
-                        src="${frontImage}"
-                        alt="Front of card"
-                    >`;
+        reader.onload = function(event) {
 
-            }
-
-            else {
-
-                backImage =
-                    event.target.result;
-
-                backPreview.innerHTML =
-                    `<img
-                        src="${backImage}"
-                        alt="Back of card"
-                    >`;
-
-            }
-
-
-            updateAnalyzeButton();
+            callback(
+                event.target.result
+            );
 
         };
 
-
-    reader.readAsDataURL(file);
-}
-
-
-/* BUTTON STATE */
-
-function updateAnalyzeButton() {
-
-    analyzeButton.disabled =
-        !(frontImage && backImage);
+        reader.readAsDataURL(file);
+    }
 
 
-    if (
-        frontImage &&
-        backImage
+    /* =====================================================
+       FRONT IMAGE
+    ===================================================== */
+
+    frontInput.addEventListener(
+        "change",
+        function() {
+
+            const file =
+                this.files[0];
+
+            if (!file) {
+                return;
+            }
+
+            readImage(
+                file,
+                function(image) {
+
+                    frontImage =
+                        image;
+
+                    frontPreview.src =
+                        image;
+
+                    frontBox.classList.add(
+                        "has-image"
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    /* =====================================================
+       BACK IMAGE
+    ===================================================== */
+
+    backInput.addEventListener(
+        "change",
+        function() {
+
+            const file =
+                this.files[0];
+
+            if (!file) {
+                return;
+            }
+
+            readImage(
+                file,
+                function(image) {
+
+                    backImage =
+                        image;
+
+                    backPreview.src =
+                        image;
+
+                    backBox.classList.add(
+                        "has-image"
+                    );
+
+                }
+            );
+
+        }
+    );
+
+
+    /* =====================================================
+       STATUS
+    ===================================================== */
+
+    function showStatus(
+        message,
+        isError = false
     ) {
 
-        analyzeButton.textContent =
-            "Analyze Card";
+        status.textContent =
+            message;
+
+        status.classList.add(
+            "visible"
+        );
+
+        status.classList.toggle(
+            "error",
+            isError
+        );
 
     }
 
-}
 
+    function hideStatus() {
 
-/* MESSAGES */
-
-function showMessage(text) {
-
-    message.style.display =
-        "block";
-
-    message.textContent =
-        text;
-
-}
-
-
-function hideMessage() {
-
-    message.style.display =
-        "none";
-
-}
-
-
-/* SAFE VALUES */
-
-function valueOrUnknown(value) {
-
-    if (
-        value === null ||
-        value === undefined ||
-        value === "" ||
-        value === "null"
-    ) {
-
-        return "Unknown";
+        status.classList.remove(
+            "visible"
+        );
 
     }
 
-    return value;
 
-}
+    /* =====================================================
+       SAFE TEXT
+    ===================================================== */
 
-
-/* SET RESULT VALUE */
-
-function setValue(id, value) {
-
-    document.getElementById(id)
-        .textContent =
-        valueOrUnknown(value);
-
-}
-
-
-/* ANALYZE CARD */
-
-analyzeButton.addEventListener(
-    "click",
-    async function () {
+    function safe(value) {
 
         if (
-            !frontImage ||
-            !backImage
+            value === null ||
+            value === undefined ||
+            value === "" ||
+            value === "Unknown"
         ) {
 
-            return;
+            return "Unknown";
 
         }
 
+        return String(value);
 
-        results.style.display =
-            "none";
-
-        hideMessage();
+    }
 
 
-        analyzeButton.disabled =
-            true;
+    /* =====================================================
+       DISPLAY DETAILS
+    ===================================================== */
 
-        analyzeButton.textContent =
-            "Analyzing...";
+    function displayDetails(card) {
+
+        const detailsGrid =
+            document.getElementById(
+                "detailsGrid"
+            );
+
+        const details = [
+
+            ["Category", card.category],
+
+            ["Player / Character",
+                card.playerOrCharacter],
+
+            ["Sport", card.sport],
+
+            ["Team", card.team],
+
+            ["Year", card.year],
+
+            ["Manufacturer",
+                card.manufacturer],
+
+            ["Set", card.set],
+
+            ["Card Number",
+                card.cardNumber],
+
+            ["Rarity", card.rarity],
+
+            ["Parallel / Variant",
+                card.parallelOrVariant],
+
+            ["Edition", card.edition],
+
+            ["Language", card.language],
+
+            ["Serial Number",
+                card.serialNumber],
+
+            ["Rookie",
+                card.rookie === null
+                    ? "Unknown"
+                    : card.rookie
+                        ? "Yes"
+                        : "No"],
+
+            ["First Edition",
+                card.firstEdition === null
+                    ? "Unknown"
+                    : card.firstEdition
+                        ? "Yes"
+                        : "No"],
+
+            ["Autograph",
+                card.autograph === null
+                    ? "Unknown"
+                    : card.autograph
+                        ? "Yes"
+                        : "No"],
+
+            ["Memorabilia",
+                card.memorabilia === null
+                    ? "Unknown"
+                    : card.memorabilia
+                        ? "Yes"
+                        : "No"],
+
+            ["Graded",
+                card.graded === null
+                    ? "Unknown"
+                    : card.graded
+                        ? "Yes"
+                        : "No"],
+
+            ["Grading Company",
+                card.gradingCompany],
+
+            ["Grade",
+                card.grade]
+
+        ];
 
 
-        showMessage(
-            "Sending the card images for identification..."
-        );
+        detailsGrid.innerHTML =
+            details.map(
+                function(item) {
+
+                    return `
+                        <div class="detail">
+                            <span class="detail-label">
+                                ${item[0]}
+                            </span>
+
+                            <span class="detail-value">
+                                ${safe(item[1])}
+                            </span>
+                        </div>
+                    `;
+
+                }
+            ).join("");
+
+    }
 
 
-        try {
+    /* =====================================================
+       DISPLAY EBAY
+    ===================================================== */
 
-            /*
-            IMPORTANT:
+    function displayEbayListings(
+        ebay
+    ) {
 
-            This uses a relative API URL.
+        const listingGrid =
+            document.getElementById(
+                "listingGrid"
+            );
 
-            That means CardForge works from:
-            - Mac
-            - iPhone
-            - iPad
-            - Any device connected to this server
-            */
-
-            const response =
-                await fetch(
-                    "/api/analyze-card",
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body:
-                            JSON.stringify({
-                                frontImage:
-                                    frontImage,
-
-                                backImage:
-                                    backImage
-                            })
-                    }
-                );
+        listingGrid.innerHTML = "";
 
 
-            const data =
-                await response.json();
+        if (
+            !ebay ||
+            !ebay.listings ||
+            ebay.listings.length === 0
+        ) {
+
+            listingGrid.innerHTML = `
+                <div class="no-listings">
+                    No active eBay listings were found
+                    for this search.
+                </div>
+            `;
+
+            return;
+        }
 
 
-            if (
-                !response.ok ||
-                !data.success
-            ) {
+        ebay.listings.forEach(
+            function(listing) {
 
-                throw new Error(
-                    data.error ||
-                    "Card analysis failed."
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+                card.className =
+                    "listing";
+
+
+                const price =
+                    listing.price !== null
+                        ? `$${Number(
+                            listing.price
+                          ).toFixed(2)}`
+                        : "Price unavailable";
+
+
+                const image =
+                    listing.image
+                        ? `
+                            <img
+                                class="listing-image"
+                                src="${listing.image}"
+                                alt="eBay listing"
+                                loading="lazy"
+                            >
+                          `
+                        : `
+                            <div
+                                style="
+                                    color:#54708f;
+                                    font-size:14px;
+                                "
+                            >
+                                No image
+                            </div>
+                          `;
+
+
+                card.innerHTML = `
+
+                    <div class="listing-image-wrap">
+                        ${image}
+                    </div>
+
+                    <div class="listing-info">
+
+                        <div class="listing-title">
+                            ${safe(
+                                listing.title
+                            )}
+                        </div>
+
+                        <div class="listing-price">
+                            ${price}
+                        </div>
+
+                        <div class="listing-condition">
+                            ${safe(
+                                listing.condition
+                            )}
+                        </div>
+
+                        ${
+                            listing.itemWebUrl
+                                ? `
+                                    <a
+                                        class="listing-link"
+                                        href="${listing.itemWebUrl}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        View on eBay
+                                    </a>
+                                  `
+                                : ""
+                        }
+
+                    </div>
+                `;
+
+
+                listingGrid.appendChild(
+                    card
                 );
 
             }
+        );
+
+    }
 
 
-            const card =
-                data.card;
+    /* =====================================================
+       ANALYZE
+    ===================================================== */
 
+    analyzeButton.addEventListener(
+        "click",
+        async function() {
 
-            /* MAIN INFO */
+            if (!frontImage) {
 
-            setValue(
-                "cardName",
-                card.cardName
-            );
-
-
-            setValue(
-                "cardType",
-                card.cardType
-            );
-
-
-            setValue(
-                "category",
-                card.category
-            );
-
-
-            setValue(
-                "player",
-                card.playerOrCharacter
-            );
-
-
-            setValue(
-                "sport",
-                card.sport
-            );
-
-
-            setValue(
-                "team",
-                card.team
-            );
-
-
-            setValue(
-                "year",
-                card.year
-            );
-
-
-            setValue(
-                "manufacturer",
-                card.manufacturer
-            );
-
-
-            setValue(
-                "set",
-                card.set
-            );
-
-
-            setValue(
-                "cardNumber",
-                card.cardNumber
-            );
-
-
-            setValue(
-                "rarity",
-                card.rarity
-            );
-
-
-            setValue(
-                "parallel",
-                card.parallelOrVariant
-            );
-
-
-            setValue(
-                "edition",
-                card.edition
-            );
-
-
-            setValue(
-                "language",
-                card.language
-            );
-
-
-            setValue(
-                "serialNumber",
-                card.serialNumber
-            );
-
-
-            setValue(
-                "rookie",
-                card.rookie
-            );
-
-
-            setValue(
-                "firstEdition",
-                card.firstEdition
-            );
-
-
-            setValue(
-                "autograph",
-                card.autograph
-            );
-
-
-            setValue(
-                "memorabilia",
-                card.memorabilia
-            );
-
-
-            setValue(
-                "graded",
-                card.graded
-            );
-
-
-            setValue(
-                "gradingCompany",
-                card.gradingCompany
-            );
-
-
-            setValue(
-                "grade",
-                card.grade
-            );
-
-
-            /* DESCRIPTION */
-
-            document.getElementById(
-                "description"
-            ).textContent =
-                valueOrUnknown(
-                    card.description
+                showStatus(
+                    "Please upload the front of the card.",
+                    true
                 );
 
-
-            /* CONFIDENCE */
-
-            document.getElementById(
-                "confidence"
-            ).textContent =
-                "Confidence: " +
-                valueOrUnknown(
-                    card.confidence
-                ) +
-                "%";
+                return;
+            }
 
 
-            /* EVIDENCE */
+            if (!backImage) {
 
-            const evidenceList =
+                showStatus(
+                    "Please upload the back of the card.",
+                    true
+                );
+
+                return;
+            }
+
+
+            analyzeButton.disabled =
+                true;
+
+            analyzeButton.textContent =
+                "Analyzing Card...";
+
+
+            results.style.display =
+                "none";
+
+
+            showStatus(
+                "CardForge is identifying your card and searching eBay..."
+            );
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/api/analyze-card",
+                        {
+
+                            method:
+                                "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+
+                                    frontImage:
+                                        frontImage,
+
+                                    backImage:
+                                        backImage
+
+                                })
+
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (
+                    !response.ok ||
+                    !data.success
+                ) {
+
+                    throw new Error(
+                        data.error ||
+                        "Card analysis failed."
+                    );
+
+                }
+
+
+                const card =
+                    data.card;
+
+
+                /* =================================================
+                   CARD HEADER
+                ================================================= */
+
                 document.getElementById(
-                    "evidenceList"
+                    "cardName"
+                ).textContent =
+                    safe(
+                        card.cardName
+                    );
+
+
+                document.getElementById(
+                    "cardType"
+                ).textContent =
+                    `${safe(
+                        card.cardType
+                    )} • ${safe(
+                        card.category
+                    )}`;
+
+
+                document.getElementById(
+                    "confidence"
+                ).textContent =
+                    `${Number(
+                        card.confidence || 0
+                    )}%`;
+
+
+                /* =================================================
+                   DETAILS
+                ================================================= */
+
+                displayDetails(
+                    card
                 );
 
 
-            evidenceList.innerHTML =
-                "";
+                /* =================================================
+                   EVIDENCE
+                ================================================= */
+
+                const evidenceList =
+                    document.getElementById(
+                        "evidenceList"
+                    );
 
 
-            if (
-                Array.isArray(
-                    card.identificationEvidence
-                ) &&
-                card.identificationEvidence.length > 0
-            ) {
+                evidenceList.innerHTML =
+                    "";
 
-                card.identificationEvidence
-                    .forEach(
-                        function (item) {
+
+                const evidence =
+                    Array.isArray(
+                        card.identificationEvidence
+                    )
+                        ? card.identificationEvidence
+                        : [];
+
+
+                if (
+                    evidence.length === 0
+                ) {
+
+                    evidenceList.innerHTML =
+                        "<li>No identification evidence returned.</li>";
+
+                } else {
+
+                    evidence.forEach(
+                        function(item) {
 
                             const li =
                                 document.createElement(
@@ -1398,98 +2179,85 @@ analyzeButton.addEventListener(
                             li.textContent =
                                 item;
 
-                            evidenceList
-                                .appendChild(li);
+                            evidenceList.appendChild(
+                                li
+                            );
 
                         }
                     );
 
-            }
+                }
 
-            else {
 
-                const li =
-                    document.createElement(
-                        "li"
+                /* =================================================
+                   SEARCH QUERY
+                ================================================= */
+
+                document.getElementById(
+                    "searchQuery"
+                ).textContent =
+                    safe(
+                        card.searchQuery
                     );
 
-                li.textContent =
-                    "No additional evidence provided.";
 
-                evidenceList
-                    .appendChild(li);
+                /* =================================================
+                   EBAY
+                ================================================= */
 
-            }
-
-
-            /* SEARCH QUERY */
-
-            document.getElementById(
-                "searchQuery"
-            ).textContent =
-                valueOrUnknown(
-                    card.searchQuery
+                displayEbayListings(
+                    data.ebay
                 );
 
 
-            /* SHOW RESULTS */
+                /* =================================================
+                   SHOW RESULTS
+                ================================================= */
 
-            results.style.display =
-                "block";
+                results.style.display =
+                    "block";
 
 
-            hideMessage();
+                hideStatus();
 
 
-            results.scrollIntoView({
-                behavior: "smooth",
-                block: "start"
-            });
+                results.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
 
+            }
+
+
+            catch (error) {
+
+                console.error(
+                    error
+                );
+
+                showStatus(
+                    "There was a problem analyzing the card: " +
+                    error.message,
+                    true
+                );
+
+            }
+
+
+            finally {
+
+                analyzeButton.disabled =
+                    false;
+
+                analyzeButton.textContent =
+                    "✦  Analyze Card";
+
+            }
 
         }
-
-        catch (error) {
-
-            console.error(error);
-
-
-            showMessage(
-                "There was a problem analyzing the card: " +
-                error.message
-            );
-
-        }
-
-
-        finally {
-
-            analyzeButton.disabled =
-                !(frontImage && backImage);
-
-            analyzeButton.textContent =
-                "Analyze Card";
-
-        }
-
-    }
-);
+    );
 
 </script>
 
 </body>
 </html>
-```
-
-**After replacing it:**
-
-1. Save `index.html` with **⌘ + S**
-2. Make sure your CardForge backend is still running in Terminal
-3. Refresh CardForge on your iPhone
-4. Upload the **front**
-5. Upload the **back**
-6. Tap **Analyze Card**
-
-The important fix is already built in: `fetch("/api/analyze-card")`. So the iPhone will send the images to the CardForge server running on your Mac instead of trying to contact the iPhone itself. 🔥
-
-Once this works, we can move to the **next CardForge version**, where the identification results can feed directly into the eBay active-listing search.
