@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const OpenAI = require("openai");
+const crypto = require("crypto");
 
 dotenv.config();
 
@@ -34,7 +35,6 @@ const openai = new OpenAI({
 const OPENAI_MODEL =
     process.env.OPENAI_MODEL || "gpt-4.1-mini";
 
-
 /* =========================================================
    EBAY
 ========================================================= */
@@ -42,9 +42,22 @@ const OPENAI_MODEL =
 const EBAY_APP_ID = process.env.EBAY_APP_ID;
 const EBAY_CERT_ID = process.env.EBAY_CERT_ID;
 
+/*
+   These two variables are used for eBay's
+   Marketplace Account Deletion verification.
+
+   IMPORTANT:
+   The endpoint URL here MUST exactly match
+   the endpoint URL you enter into eBay.
+*/
+const EBAY_VERIFICATION_TOKEN =
+    process.env.EBAY_VERIFICATION_TOKEN;
+
+const EBAY_NOTIFICATION_ENDPOINT =
+    process.env.EBAY_NOTIFICATION_ENDPOINT;
+
 let ebayToken = null;
 let ebayTokenExpiresAt = 0;
-
 
 /* =========================================================
    HEALTH CHECK
@@ -54,12 +67,126 @@ app.get("/api/health", (req, res) => {
     res.json({
         success: true,
         message: "CardForge backend is running.",
-        version: "V8",
+        version: "V9",
         ai: true,
-        ebay: !!(EBAY_APP_ID && EBAY_CERT_ID)
+        ebay: !!(EBAY_APP_ID && EBAY_CERT_ID),
+        ebayNotificationEndpoint:
+            !!(
+                EBAY_VERIFICATION_TOKEN &&
+                EBAY_NOTIFICATION_ENDPOINT
+            )
     });
 });
 
+/* =========================================================
+   EBAY MARKETPLACE ACCOUNT DELETION VERIFICATION
+========================================================= */
+
+/*
+   eBay sends:
+
+   GET /api/ebay/account-deletion?challenge_code=...
+
+   We must return:
+
+   {
+       "challengeResponse": "..."
+   }
+
+   The SHA-256 input must be:
+
+   challengeCode + verificationToken + endpoint
+
+   The endpoint must EXACTLY match the URL registered
+   with eBay.
+*/
+
+app.get(
+    "/api/ebay/account-deletion",
+    (req, res) => {
+        try {
+            const challengeCode =
+                req.query.challenge_code;
+
+            if (!challengeCode) {
+                return res.status(400).json({
+                    error:
+                        "Missing challenge_code."
+                });
+            }
+
+            if (
+                !EBAY_VERIFICATION_TOKEN ||
+                !EBAY_NOTIFICATION_ENDPOINT
+            ) {
+                console.error(
+                    "eBay verification environment variables are missing."
+                );
+
+                return res.status(500).json({
+                    error:
+                        "eBay verification configuration is missing."
+                });
+            }
+
+            const hash = crypto.createHash("sha256");
+
+            hash.update(challengeCode);
+            hash.update(EBAY_VERIFICATION_TOKEN);
+            hash.update(EBAY_NOTIFICATION_ENDPOINT);
+
+            const challengeResponse =
+                hash.digest("hex");
+
+            console.log(
+                "eBay endpoint verification challenge received."
+            );
+
+            res.status(200).json({
+                challengeResponse
+            });
+
+        } catch (error) {
+            console.error(
+                "eBay endpoint verification error:",
+                error
+            );
+
+            res.status(500).json({
+                error:
+                    "eBay endpoint verification failed."
+            });
+        }
+    }
+);
+
+/*
+   eBay sends marketplace account deletion
+   notifications using POST.
+
+   We acknowledge them immediately with 200 OK.
+*/
+
+app.post(
+    "/api/ebay/account-deletion",
+    (req, res) => {
+        console.log(
+            "eBay marketplace account deletion notification received."
+        );
+
+        console.log(
+            JSON.stringify(
+                req.body,
+                null,
+                2
+            )
+        );
+
+        res.status(200).json({
+            received: true
+        });
+    }
+);
 
 /* =========================================================
    EBAY APPLICATION TOKEN
@@ -73,18 +200,22 @@ async function getEbayAccessToken() {
         );
     }
 
-    // Reuse existing token if it is still valid
     if (
         ebayToken &&
-        Date.now() < ebayTokenExpiresAt - 60000
+        Date.now() <
+            ebayTokenExpiresAt - 60000
     ) {
         return ebayToken;
     }
 
-    console.log("Getting new eBay application access token...");
+    console.log(
+        "Getting new eBay application access token..."
+    );
 
     const credentials = Buffer
-        .from(`${EBAY_APP_ID}:${EBAY_CERT_ID}`)
+        .from(
+            `${EBAY_APP_ID}:${EBAY_CERT_ID}`
+        )
         .toString("base64");
 
     const response = await fetch(
@@ -95,6 +226,7 @@ async function getEbayAccessToken() {
             headers: {
                 "Content-Type":
                     "application/x-www-form-urlencoded",
+
                 "Authorization":
                     `Basic ${credentials}`
             },
@@ -124,11 +256,12 @@ async function getEbayAccessToken() {
         );
     }
 
-    ebayToken = data.access_token;
+    ebayToken =
+        data.access_token;
 
     ebayTokenExpiresAt =
         Date.now() +
-        (data.expires_in * 1000);
+        data.expires_in * 1000;
 
     console.log(
         "eBay access token obtained successfully."
@@ -137,12 +270,13 @@ async function getEbayAccessToken() {
     return ebayToken;
 }
 
-
 /* =========================================================
    EBAY ACTIVE LISTING SEARCH
 ========================================================= */
 
-async function searchEbayListings(searchQuery) {
+async function searchEbayListings(
+    searchQuery
+) {
 
     const token =
         await getEbayAccessToken();
@@ -216,7 +350,9 @@ async function searchEbayListings(searchQuery) {
 
                 const price =
                     item.price?.value
-                        ? Number(item.price.value)
+                        ? Number(
+                            item.price.value
+                        )
                         : null;
 
                 return {
@@ -224,34 +360,39 @@ async function searchEbayListings(searchQuery) {
                         item.itemId || "",
 
                     title:
-                        item.title || "Unknown listing",
+                        item.title ||
+                        "Unknown listing",
 
-                    price:
-                        price,
+                    price,
 
                     currency:
-                        item.price?.currency || "USD",
+                        item.price?.currency ||
+                        "USD",
 
                     image:
-                        item.image?.imageUrl || "",
+                        item.image?.imageUrl ||
+                        "",
 
                     itemWebUrl:
-                        item.itemWebUrl || "",
+                        item.itemWebUrl ||
+                        "",
 
                     condition:
-                        item.condition || "Unknown",
+                        item.condition ||
+                        "Unknown",
 
                     seller:
-                        item.seller?.username || "",
+                        item.seller?.username ||
+                        "",
 
                     buyingOptions:
-                        item.buyingOptions || []
+                        item.buyingOptions ||
+                        []
                 };
             });
 
     return listings;
 }
-
 
 /* =========================================================
    AI CARD ANALYSIS
@@ -262,12 +403,15 @@ app.post(
     async (req, res) => {
 
         console.log("");
+
         console.log(
             "======================================"
         );
+
         console.log(
-            "       CARDFORGE V8 ANALYSIS"
+            "       CARDFORGE V9 ANALYSIS"
         );
+
         console.log(
             "======================================"
         );
@@ -286,6 +430,7 @@ app.post(
 
                 return res.status(400).json({
                     success: false,
+
                     error:
                         "Both front and back images are required."
                 });
@@ -301,11 +446,9 @@ app.post(
 
             const prompt = `
 
-You are CardForge, a professional universal collectible-card
-identification system.
+You are CardForge, a professional universal collectible-card identification system.
 
-Identify ANY collectible card from the supplied front and back
-photographs.
+Identify ANY collectible card from the supplied front and back photographs.
 
 The card may be:
 
@@ -386,44 +529,43 @@ Give a confidence score from 0 to 100.
 
 Give evidence supporting the identification.
 
-Create a concise marketplace search query that should find
-the exact card.
+Create a concise marketplace search query that should find the exact card.
 
 Return ONLY valid JSON.
 
 Use exactly this structure:
 
 {
-  "cardType": "",
-  "category": "",
-  "cardName": "",
-  "playerOrCharacter": "",
-  "sport": "",
-  "team": "",
-  "year": "",
-  "manufacturer": "",
-  "set": "",
-  "cardNumber": "",
-  "rarity": "",
-  "parallelOrVariant": "",
-  "edition": "",
-  "language": "",
-  "serialNumber": "",
-  "rookie": null,
-  "firstEdition": null,
-  "autograph": null,
-  "memorabilia": null,
-  "graded": null,
-  "gradingCompany": "",
-  "grade": "",
-  "specialFeatures": [],
-  "confidence": 0,
-  "description": "",
-  "identificationEvidence": [],
-  "searchQuery": "",
-  "estimatedValue": "Pending market research",
-  "valueConfidence": 0,
-  "notes": ""
+    "cardType": "",
+    "category": "",
+    "cardName": "",
+    "playerOrCharacter": "",
+    "sport": "",
+    "team": "",
+    "year": "",
+    "manufacturer": "",
+    "set": "",
+    "cardNumber": "",
+    "rarity": "",
+    "parallelOrVariant": "",
+    "edition": "",
+    "language": "",
+    "serialNumber": "",
+    "rookie": null,
+    "firstEdition": null,
+    "autograph": null,
+    "memorabilia": null,
+    "graded": null,
+    "gradingCompany": "",
+    "grade": "",
+    "specialFeatures": [],
+    "confidence": 0,
+    "description": "",
+    "identificationEvidence": [],
+    "searchQuery": "",
+    "estimatedValue": "Pending market research",
+    "valueConfidence": 0,
+    "notes": ""
 }
 
 `;
@@ -439,7 +581,6 @@ Use exactly this structure:
                         OPENAI_MODEL,
 
                     input: [
-
                         {
                             role: "user",
 
@@ -487,10 +628,8 @@ Use exactly this structure:
 
                             ]
                         }
-
                     ]
                 });
-
 
             const output =
                 response.output_text;
@@ -513,16 +652,12 @@ Use exactly this structure:
                 );
 
                 return res.status(500).json({
-
-                    success:
-                        false,
+                    success: false,
 
                     error:
                         "The AI returned invalid card analysis."
-
                 });
             }
-
 
             console.log(
                 "Card identified:"
@@ -532,12 +667,12 @@ Use exactly this structure:
                 cardData.searchQuery
             );
 
-
             /* =================================================
                EBAY SEARCH
             ================================================= */
 
             let ebayListings = [];
+
             let ebayError = null;
 
             try {
@@ -557,7 +692,6 @@ Use exactly this structure:
 
                     ebayError =
                         "eBay credentials or search query missing.";
-
                 }
 
             } catch (error) {
@@ -574,16 +708,13 @@ Use exactly this structure:
                     error.message;
             }
 
-
             console.log(
                 `eBay listings found: ${ebayListings.length}`
             );
 
-
             console.log(
                 "======================================"
             );
-
 
             res.json({
 
@@ -603,7 +734,6 @@ Use exactly this structure:
 
                     error:
                         ebayError
-
                 }
 
             });
@@ -613,12 +743,15 @@ Use exactly this structure:
         catch (error) {
 
             console.error("");
+
             console.error(
                 "======================================"
             );
+
             console.error(
-                "       CARDFORGE V8 ERROR"
+                "       CARDFORGE V9 ERROR"
             );
+
             console.error(
                 "======================================"
             );
@@ -639,12 +772,10 @@ Use exactly this structure:
                 error:
                     error.message ||
                     "Unknown CardForge backend error."
-
             });
         }
     }
 );
-
 
 /* =========================================================
    START SERVER
@@ -656,12 +787,15 @@ app.listen(
     () => {
 
         console.log("");
+
         console.log(
             "======================================"
         );
+
         console.log(
-            "        CARDFORGE V8 BACKEND"
+            "        CARDFORGE V9 BACKEND"
         );
+
         console.log(
             "======================================"
         );
@@ -676,7 +810,19 @@ app.listen(
 
         console.log(
             `eBay configured: ${
-                !!(EBAY_APP_ID && EBAY_CERT_ID)
+                !!(
+                    EBAY_APP_ID &&
+                    EBAY_CERT_ID
+                )
+            }`
+        );
+
+        console.log(
+            `eBay notification verification configured: ${
+                !!(
+                    EBAY_VERIFICATION_TOKEN &&
+                    EBAY_NOTIFICATION_ENDPOINT
+                )
             }`
         );
 
