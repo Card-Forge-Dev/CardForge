@@ -42,19 +42,14 @@ const OPENAI_MODEL =
 const EBAY_APP_ID = process.env.EBAY_APP_ID;
 const EBAY_CERT_ID = process.env.EBAY_CERT_ID;
 
-/*
-   These two variables are used for eBay's
-   Marketplace Account Deletion verification.
-
-   IMPORTANT:
-   The endpoint URL here MUST exactly match
-   the endpoint URL you enter into eBay.
-*/
 const EBAY_VERIFICATION_TOKEN =
     process.env.EBAY_VERIFICATION_TOKEN;
 
 const EBAY_NOTIFICATION_ENDPOINT =
     process.env.EBAY_NOTIFICATION_ENDPOINT;
+
+const EBAY_ENDPOINT =
+    "https://cardforge-0s37.onrender.com/api/ebay/account-deletion";
 
 let ebayToken = null;
 let ebayTokenExpiresAt = 0;
@@ -68,108 +63,117 @@ app.get("/api/health", (req, res) => {
         success: true,
         message: "CardForge backend is running.",
         version: "V9",
-        ai: true,
+        ai: !!process.env.OPENAI_API_KEY,
         ebay: !!(EBAY_APP_ID && EBAY_CERT_ID),
         ebayNotificationEndpoint:
-            !!(
-                EBAY_VERIFICATION_TOKEN &&
-                EBAY_NOTIFICATION_ENDPOINT
-            )
+            EBAY_ENDPOINT
     });
 });
 
 /* =========================================================
-   EBAY MARKETPLACE ACCOUNT DELETION VERIFICATION
+   EBAY ACCOUNT DELETION VERIFICATION
 ========================================================= */
-
-/*
-   eBay sends:
-
-   GET /api/ebay/account-deletion?challenge_code=...
-
-   We must return:
-
-   {
-       "challengeResponse": "..."
-   }
-
-   The SHA-256 input must be:
-
-   challengeCode + verificationToken + endpoint
-
-   The endpoint must EXACTLY match the URL registered
-   with eBay.
-*/
 
 app.get(
     "/api/ebay/account-deletion",
     (req, res) => {
+
+        const challengeCode =
+            req.query.challenge_code;
+
+        console.log(
+            "eBay endpoint verification challenge received."
+        );
+
+        if (!challengeCode) {
+            return res.status(400).json({
+                error:
+                    "Missing challenge_code."
+            });
+        }
+
+        if (!EBAY_VERIFICATION_TOKEN) {
+            console.error(
+                "ERROR: EBAY_VERIFICATION_TOKEN is missing."
+            );
+
+            return res.status(500).json({
+                error:
+                    "Verification token is not configured."
+            });
+        }
+
         try {
-            const challengeCode =
-                req.query.challenge_code;
 
-            if (!challengeCode) {
-                return res.status(400).json({
-                    error:
-                        "Missing challenge_code."
-                });
-            }
+            /*
+             * eBay requires:
+             *
+             * SHA256(
+             *   challengeCode +
+             *   verificationToken +
+             *   endpoint
+             * )
+             */
 
-            if (
-                !EBAY_VERIFICATION_TOKEN ||
-                !EBAY_NOTIFICATION_ENDPOINT
-            ) {
-                console.error(
-                    "eBay verification environment variables are missing."
-                );
+            const hash =
+                crypto.createHash("sha256");
 
-                return res.status(500).json({
-                    error:
-                        "eBay verification configuration is missing."
-                });
-            }
+            hash.update(
+                challengeCode
+            );
 
-            const hash = crypto.createHash("sha256");
+            hash.update(
+                EBAY_VERIFICATION_TOKEN
+            );
 
-            hash.update(challengeCode);
-            hash.update(EBAY_VERIFICATION_TOKEN);
-            hash.update(EBAY_NOTIFICATION_ENDPOINT);
+            /*
+             * IMPORTANT:
+             * This MUST exactly match the
+             * Notification Endpoint entered
+             * in the eBay Developer Portal.
+             */
+
+            hash.update(
+                EBAY_ENDPOINT
+            );
 
             const challengeResponse =
                 hash.digest("hex");
 
             console.log(
-                "eBay endpoint verification challenge received."
+                "eBay challenge response generated successfully."
             );
 
-            res.status(200).json({
+            return res.status(200).json({
                 challengeResponse
             });
 
         } catch (error) {
+
             console.error(
-                "eBay endpoint verification error:",
+                "eBay challenge response error:"
+            );
+
+            console.error(
                 error
             );
 
-            res.status(500).json({
+            return res.status(500).json({
                 error:
-                    "eBay endpoint verification failed."
+                    "Unable to generate challenge response."
             });
         }
     }
 );
 
-/*
-   eBay sends marketplace account deletion
-   notifications using POST.
-
-   We acknowledge them immediately with 200 OK.
-*/
+/* =========================================================
+   EBAY ACCOUNT DELETION NOTIFICATIONS
+========================================================= */
 
 app.post(
     "/api/ebay/account-deletion",
     (req, res) => {
+
         console.log(
             "eBay marketplace account deletion notification received."
         );
@@ -182,23 +186,33 @@ app.post(
             )
         );
 
-        res.status(200).json({
-            received: true
+        /*
+         * eBay requires the endpoint to immediately
+         * acknowledge the notification.
+         */
+
+        return res.status(200).json({
+            success: true
         });
     }
 );
 
 /* =========================================================
-   EBAY APPLICATION TOKEN
+   EBAY APPLICATION ACCESS TOKEN
 ========================================================= */
 
 async function getEbayAccessToken() {
 
     if (!EBAY_APP_ID || !EBAY_CERT_ID) {
+
         throw new Error(
             "eBay credentials are missing. Add EBAY_APP_ID and EBAY_CERT_ID to Render."
         );
     }
+
+    /*
+     * Reuse the existing token if it is still valid.
+     */
 
     if (
         ebayToken &&
@@ -212,35 +226,38 @@ async function getEbayAccessToken() {
         "Getting new eBay application access token..."
     );
 
-    const credentials = Buffer
-        .from(
-            `${EBAY_APP_ID}:${EBAY_CERT_ID}`
-        )
-        .toString("base64");
+    const credentials =
+        Buffer
+            .from(
+                `${EBAY_APP_ID}:${EBAY_CERT_ID}`
+            )
+            .toString("base64");
 
-    const response = await fetch(
-        "https://api.ebay.com/identity/v1/oauth2/token",
-        {
-            method: "POST",
+    const response =
+        await fetch(
+            "https://api.ebay.com/identity/v1/oauth2/token",
+            {
+                method: "POST",
 
-            headers: {
-                "Content-Type":
-                    "application/x-www-form-urlencoded",
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded",
 
-                "Authorization":
-                    `Basic ${credentials}`
-            },
+                    "Authorization":
+                        `Basic ${credentials}`
+                },
 
-            body:
-                "grant_type=client_credentials" +
-                "&scope=" +
-                encodeURIComponent(
-                    "https://api.ebay.com/oauth/api_scope"
-                )
-        }
-    );
+                body:
+                    "grant_type=client_credentials" +
+                    "&scope=" +
+                    encodeURIComponent(
+                        "https://api.ebay.com/oauth/api_scope"
+                    )
+            }
+        );
 
-    const data = await response.json();
+    const data =
+        await response.json();
 
     if (!response.ok) {
 
@@ -356,8 +373,10 @@ async function searchEbayListings(
                         : null;
 
                 return {
+
                     itemId:
-                        item.itemId || "",
+                        item.itemId ||
+                        "",
 
                     title:
                         item.title ||
@@ -430,7 +449,6 @@ app.post(
 
                 return res.status(400).json({
                     success: false,
-
                     error:
                         "Both front and back images are required."
                 });
@@ -481,8 +499,7 @@ Identify the card as specifically as the photographs allow.
 
 NEVER invent information.
 
-If something cannot be confidently determined,
-return "Unknown".
+If something cannot be confidently determined, return "Unknown".
 
 Carefully inspect:
 
@@ -536,36 +553,36 @@ Return ONLY valid JSON.
 Use exactly this structure:
 
 {
-    "cardType": "",
-    "category": "",
-    "cardName": "",
-    "playerOrCharacter": "",
-    "sport": "",
-    "team": "",
-    "year": "",
-    "manufacturer": "",
-    "set": "",
-    "cardNumber": "",
-    "rarity": "",
-    "parallelOrVariant": "",
-    "edition": "",
-    "language": "",
-    "serialNumber": "",
-    "rookie": null,
-    "firstEdition": null,
-    "autograph": null,
-    "memorabilia": null,
-    "graded": null,
-    "gradingCompany": "",
-    "grade": "",
-    "specialFeatures": [],
-    "confidence": 0,
-    "description": "",
-    "identificationEvidence": [],
-    "searchQuery": "",
-    "estimatedValue": "Pending market research",
-    "valueConfidence": 0,
-    "notes": ""
+  "cardType": "",
+  "category": "",
+  "cardName": "",
+  "playerOrCharacter": "",
+  "sport": "",
+  "team": "",
+  "year": "",
+  "manufacturer": "",
+  "set": "",
+  "cardNumber": "",
+  "rarity": "",
+  "parallelOrVariant": "",
+  "edition": "",
+  "language": "",
+  "serialNumber": "",
+  "rookie": null,
+  "firstEdition": null,
+  "autograph": null,
+  "memorabilia": null,
+  "graded": null,
+  "gradingCompany": "",
+  "grade": "",
+  "specialFeatures": [],
+  "confidence": 0,
+  "description": "",
+  "identificationEvidence": [],
+  "searchQuery": "",
+  "estimatedValue": "Pending market research",
+  "valueConfidence": 0,
+  "notes": ""
 }
 
 `;
@@ -652,7 +669,9 @@ Use exactly this structure:
                 );
 
                 return res.status(500).json({
-                    success: false,
+
+                    success:
+                        false,
 
                     error:
                         "The AI returned invalid card analysis."
@@ -735,12 +754,9 @@ Use exactly this structure:
                     error:
                         ebayError
                 }
-
             });
 
-        }
-
-        catch (error) {
+        } catch (error) {
 
             console.error("");
 
@@ -810,10 +826,7 @@ app.listen(
 
         console.log(
             `eBay configured: ${
-                !!(
-                    EBAY_APP_ID &&
-                    EBAY_CERT_ID
-                )
+                !!(EBAY_APP_ID && EBAY_CERT_ID)
             }`
         );
 
@@ -824,6 +837,10 @@ app.listen(
                     EBAY_NOTIFICATION_ENDPOINT
                 )
             }`
+        );
+
+        console.log(
+            `eBay endpoint: ${EBAY_ENDPOINT}`
         );
 
         console.log(
