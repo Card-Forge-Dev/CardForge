@@ -7,12 +7,6 @@ dotenv.config();
 
 const app = express();
 
-/*
-========================================
-SERVER CONFIGURATION
-========================================
-*/
-
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -23,72 +17,245 @@ app.use(
     })
 );
 
-/*
-========================================
-SERVE CARDFORGE WEBSITE
-========================================
-*/
-
 app.use(express.static(__dirname));
 
-
-/*
-========================================
-OPENAI CONFIGURATION
-========================================
-*/
+/* =========================================================
+   OPENAI
+========================================================= */
 
 if (!process.env.OPENAI_API_KEY) {
-
-    console.error(
-        "ERROR: OPENAI_API_KEY is missing."
-    );
-
+    console.error("ERROR: OPENAI_API_KEY is missing.");
 }
 
-const client = new OpenAI({
+const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
-const MODEL =
-    process.env.OPENAI_MODEL ||
-    "gpt-4.1-mini";
+const OPENAI_MODEL =
+    process.env.OPENAI_MODEL || "gpt-4.1-mini";
 
 
-/*
-========================================
-HEALTH CHECK
-========================================
-*/
+/* =========================================================
+   EBAY
+========================================================= */
 
-app.get(
-    "/api/health",
-    (req, res) => {
+const EBAY_APP_ID = process.env.EBAY_APP_ID;
+const EBAY_CERT_ID = process.env.EBAY_CERT_ID;
 
-        res.json({
+let ebayToken = null;
+let ebayTokenExpiresAt = 0;
 
-            success: true,
 
-            message:
-                "CardForge backend is running.",
+/* =========================================================
+   HEALTH CHECK
+========================================================= */
 
-            version:
-                "V7",
+app.get("/api/health", (req, res) => {
+    res.json({
+        success: true,
+        message: "CardForge backend is running.",
+        version: "V8",
+        ai: true,
+        ebay: !!(EBAY_APP_ID && EBAY_CERT_ID)
+    });
+});
 
-            ai:
-                true
 
-        });
+/* =========================================================
+   EBAY APPLICATION TOKEN
+========================================================= */
 
+async function getEbayAccessToken() {
+
+    if (!EBAY_APP_ID || !EBAY_CERT_ID) {
+        throw new Error(
+            "eBay credentials are missing. Add EBAY_APP_ID and EBAY_CERT_ID to Render."
+        );
     }
-);
+
+    // Reuse existing token if it is still valid
+    if (
+        ebayToken &&
+        Date.now() < ebayTokenExpiresAt - 60000
+    ) {
+        return ebayToken;
+    }
+
+    console.log("Getting new eBay application access token...");
+
+    const credentials = Buffer
+        .from(`${EBAY_APP_ID}:${EBAY_CERT_ID}`)
+        .toString("base64");
+
+    const response = await fetch(
+        "https://api.ebay.com/identity/v1/oauth2/token",
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type":
+                    "application/x-www-form-urlencoded",
+                "Authorization":
+                    `Basic ${credentials}`
+            },
+
+            body:
+                "grant_type=client_credentials" +
+                "&scope=" +
+                encodeURIComponent(
+                    "https://api.ebay.com/oauth/api_scope"
+                )
+        }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+
+        console.error(
+            "eBay OAuth error:",
+            data
+        );
+
+        throw new Error(
+            data.error_description ||
+            data.error ||
+            "Unable to authenticate with eBay."
+        );
+    }
+
+    ebayToken = data.access_token;
+
+    ebayTokenExpiresAt =
+        Date.now() +
+        (data.expires_in * 1000);
+
+    console.log(
+        "eBay access token obtained successfully."
+    );
+
+    return ebayToken;
+}
 
 
-/*
-========================================
-AI CARD ANALYSIS
-========================================
-*/
+/* =========================================================
+   EBAY ACTIVE LISTING SEARCH
+========================================================= */
+
+async function searchEbayListings(searchQuery) {
+
+    const token =
+        await getEbayAccessToken();
+
+    const params =
+        new URLSearchParams();
+
+    params.set(
+        "q",
+        searchQuery
+    );
+
+    params.set(
+        "limit",
+        "12"
+    );
+
+    params.set(
+        "sort",
+        "price"
+    );
+
+    const url =
+        "https://api.ebay.com/buy/browse/v1/item_summary/search?" +
+        params.toString();
+
+    console.log(
+        "Searching eBay for:",
+        searchQuery
+    );
+
+    const response =
+        await fetch(
+            url,
+            {
+                method: "GET",
+
+                headers: {
+                    "Authorization":
+                        `Bearer ${token}`,
+
+                    "Accept":
+                        "application/json",
+
+                    "X-EBAY-C-MARKETPLACE-ID":
+                        "EBAY_US"
+                }
+            }
+        );
+
+    const data =
+        await response.json();
+
+    if (!response.ok) {
+
+        console.error(
+            "eBay Browse API error:",
+            data
+        );
+
+        throw new Error(
+            data.errors?.[0]?.longMessage ||
+            data.errors?.[0]?.message ||
+            "eBay listing search failed."
+        );
+    }
+
+    const listings =
+        (data.itemSummaries || [])
+            .map(item => {
+
+                const price =
+                    item.price?.value
+                        ? Number(item.price.value)
+                        : null;
+
+                return {
+                    itemId:
+                        item.itemId || "",
+
+                    title:
+                        item.title || "Unknown listing",
+
+                    price:
+                        price,
+
+                    currency:
+                        item.price?.currency || "USD",
+
+                    image:
+                        item.image?.imageUrl || "",
+
+                    itemWebUrl:
+                        item.itemWebUrl || "",
+
+                    condition:
+                        item.condition || "Unknown",
+
+                    seller:
+                        item.seller?.username || "",
+
+                    buyingOptions:
+                        item.buyingOptions || []
+                };
+            });
+
+    return listings;
+}
+
+
+/* =========================================================
+   AI CARD ANALYSIS
+========================================================= */
 
 app.post(
     "/api/analyze-card",
@@ -99,12 +266,11 @@ app.post(
             "======================================"
         );
         console.log(
-            "        CARDFORGE AI ANALYSIS"
+            "       CARDFORGE V8 ANALYSIS"
         );
         console.log(
             "======================================"
         );
-
 
         try {
 
@@ -113,29 +279,17 @@ app.post(
                 backImage
             } = req.body;
 
-
-            /*
-            --------------------------------
-            CHECK IMAGES
-            --------------------------------
-            */
-
             if (
                 !frontImage ||
                 !backImage
             ) {
 
                 return res.status(400).json({
-
                     success: false,
-
                     error:
                         "Both front and back images are required."
-
                 });
-
             }
-
 
             console.log(
                 "Front image received."
@@ -145,40 +299,17 @@ app.post(
                 "Back image received."
             );
 
-            console.log(
-                "Sending images to AI..."
-            );
-
-
-            /*
-            --------------------------------
-            AI PROMPT
-            --------------------------------
-            */
-
             const prompt = `
 
 You are CardForge, a professional universal collectible-card
 identification system.
 
-Your job is to identify ANY collectible card from photographs.
+Identify ANY collectible card from the supplied front and back
+photographs.
 
-The card can be:
+The card may be:
 
-SPORTS:
-- Basketball
-- Football
-- Baseball
-- Hockey
-- Soccer
-- Racing
-- Golf
-- Tennis
-- Wrestling
-- Boxing
-- Other sports
-
-TRADING CARD GAMES:
+- Sports
 - Pokemon
 - Magic: The Gathering
 - Yu-Gi-Oh!
@@ -187,35 +318,28 @@ TRADING CARD GAMES:
 - Digimon
 - Dragon Ball
 - Star Wars
-- Flesh and Blood
-- Other TCGs
-
-OTHER COLLECTIBLES:
-- Vintage trading cards
-- Movie cards
-- TV cards
-- Gaming cards
-- Comic cards
-- Promotional cards
-- Non-sports cards
-- Historical cards
-- Entertainment cards
-- Rare or obscure cards
+- Gaming
+- Movies
+- Television
+- Comics
+- Vintage
+- Entertainment
+- Promotional
+- Historical
+- Other collectible cards
 
 IMPORTANT:
 
 Analyze BOTH images.
 
-Do NOT assume this is a sports card.
+Do not assume this is a sports card.
 
-First determine the type/category of card.
-
-Then identify as many details as the images actually support.
+Identify the card as specifically as the photographs allow.
 
 NEVER invent information.
 
-If you cannot confidently determine something, return
-"Unknown".
+If something cannot be confidently determined,
+return "Unknown".
 
 Carefully inspect:
 
@@ -243,31 +367,29 @@ Carefully inspect:
 - Holographic features
 - Foiling
 - Copyright information
-- Text on the front
-- Text on the back
+- Front text
+- Back text
 - Statistics
 - Logos
 - Grading information
 
-If the card is graded, identify:
+If graded, identify:
 
 - Grading company
 - Grade
 
-Do NOT estimate a price from the image alone.
+Do NOT estimate the card's market value from the photographs.
 
-The market value will be researched separately.
+Market value will be researched separately.
 
 Give a confidence score from 0 to 100.
 
-Explain the evidence you used to identify the card.
+Give evidence supporting the identification.
 
-Create a concise search query that could be used to find the
-exact card on an online marketplace.
+Create a concise marketplace search query that should find
+the exact card.
 
 Return ONLY valid JSON.
-
-Do not use markdown.
 
 Use exactly this structure:
 
@@ -306,143 +428,161 @@ Use exactly this structure:
 
 `;
 
-
-            /*
-            --------------------------------
-            SEND TO OPENAI
-            --------------------------------
-            */
+            console.log(
+                "Sending card images to OpenAI..."
+            );
 
             const response =
-                await client.responses.create({
+                await openai.responses.create({
 
                     model:
-                        MODEL,
+                        OPENAI_MODEL,
 
                     input: [
 
                         {
-
-                            role:
-                                "user",
+                            role: "user",
 
                             content: [
 
                                 {
-
                                     type:
                                         "input_text",
 
                                     text:
                                         prompt
-
                                 },
 
                                 {
-
                                     type:
                                         "input_text",
 
                                     text:
                                         "IMAGE 1: FRONT OF CARD"
-
                                 },
 
                                 {
-
                                     type:
                                         "input_image",
 
                                     image_url:
                                         frontImage
-
                                 },
 
                                 {
-
                                     type:
                                         "input_text",
 
                                     text:
                                         "IMAGE 2: BACK OF CARD"
-
                                 },
 
                                 {
-
                                     type:
                                         "input_image",
 
                                     image_url:
                                         backImage
-
                                 }
 
                             ]
-
                         }
 
                     ]
-
                 });
 
-
-            /*
-            --------------------------------
-            READ AI RESPONSE
-            --------------------------------
-            */
 
             const output =
                 response.output_text;
 
-
             let cardData;
-
 
             try {
 
                 cardData =
                     JSON.parse(output);
 
-            }
-
-            catch (error) {
+            } catch (error) {
 
                 console.error(
-                    "AI returned invalid JSON."
+                    "AI returned invalid JSON:"
+                );
+
+                console.error(
+                    output
                 );
 
                 return res.status(500).json({
 
-                    success: false,
+                    success:
+                        false,
 
                     error:
-                        "The AI returned an invalid card analysis.",
-
-                    raw:
-                        output
+                        "The AI returned invalid card analysis."
 
                 });
-
             }
 
 
-            /*
-            --------------------------------
-            SUCCESS
-            --------------------------------
-            */
+            console.log(
+                "Card identified:"
+            );
 
             console.log(
-                "AI analysis completed successfully."
+                cardData.searchQuery
             );
+
+
+            /* =================================================
+               EBAY SEARCH
+            ================================================= */
+
+            let ebayListings = [];
+            let ebayError = null;
+
+            try {
+
+                if (
+                    cardData.searchQuery &&
+                    EBAY_APP_ID &&
+                    EBAY_CERT_ID
+                ) {
+
+                    ebayListings =
+                        await searchEbayListings(
+                            cardData.searchQuery
+                        );
+
+                } else {
+
+                    ebayError =
+                        "eBay credentials or search query missing.";
+
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "eBay search failed:"
+                );
+
+                console.error(
+                    error.message
+                );
+
+                ebayError =
+                    error.message;
+            }
+
+
+            console.log(
+                `eBay listings found: ${ebayListings.length}`
+            );
+
 
             console.log(
                 "======================================"
             );
-
-            console.log("");
 
 
             res.json({
@@ -451,43 +591,45 @@ Use exactly this structure:
                     true,
 
                 card:
-                    cardData
+                    cardData,
+
+                ebay: {
+
+                    success:
+                        ebayListings.length > 0,
+
+                    listings:
+                        ebayListings,
+
+                    error:
+                        ebayError
+
+                }
 
             });
 
         }
 
-
-        /*
-        --------------------------------
-        ERROR HANDLING
-        --------------------------------
-        */
-
         catch (error) {
 
-            console.log("");
-
-            console.log(
+            console.error("");
+            console.error(
+                "======================================"
+            );
+            console.error(
+                "       CARDFORGE V8 ERROR"
+            );
+            console.error(
                 "======================================"
             );
 
-            console.log(
-                "        CARDFORGE AI ERROR"
+            console.error(
+                error
             );
 
-            console.log(
+            console.error(
                 "======================================"
             );
-
-            console.error(error);
-
-            console.log(
-                "======================================"
-            );
-
-            console.log("");
-
 
             res.status(500).json({
 
@@ -499,18 +641,14 @@ Use exactly this structure:
                     "Unknown CardForge backend error."
 
             });
-
         }
-
     }
 );
 
 
-/*
-========================================
-START SERVER
-========================================
-*/
+/* =========================================================
+   START SERVER
+========================================================= */
 
 app.listen(
     PORT,
@@ -518,15 +656,12 @@ app.listen(
     () => {
 
         console.log("");
-
         console.log(
             "======================================"
         );
-
         console.log(
-            "        CARDFORGE V7 BACKEND"
+            "        CARDFORGE V8 BACKEND"
         );
-
         console.log(
             "======================================"
         );
@@ -536,19 +671,13 @@ app.listen(
         );
 
         console.log(
-            `Website: http://localhost:${PORT}`
+            `AI model: ${OPENAI_MODEL}`
         );
 
         console.log(
-            "Network access enabled."
-        );
-
-        console.log(
-            `Health check: /api/health`
-        );
-
-        console.log(
-            `AI model: ${MODEL}`
+            `eBay configured: ${
+                !!(EBAY_APP_ID && EBAY_CERT_ID)
+            }`
         );
 
         console.log(
@@ -556,7 +685,5 @@ app.listen(
         );
 
         console.log("");
-
     }
 );
-
