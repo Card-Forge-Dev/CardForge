@@ -1,0 +1,1495 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>CardForge</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #111;
+    color: #eee;
+}
+
+/* HEADER */
+
+.header {
+    height: 64px;
+    border-bottom: 1px solid #2a2a2a;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    background: #151515;
+}
+
+.logo {
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.version {
+    color: #888;
+    font-size: 13px;
+    margin-left: 8px;
+    font-weight: normal;
+}
+
+.status {
+    font-size: 13px;
+    color: #7fd88b;
+}
+
+/* MAIN */
+
+.container {
+    width: min(1100px, calc(100% - 32px));
+    margin: 35px auto 70px;
+}
+
+.intro {
+    margin-bottom: 28px;
+}
+
+.intro h1 {
+    margin: 0 0 8px;
+    font-size: 30px;
+    font-weight: 700;
+}
+
+.intro p {
+    margin: 0;
+    color: #999;
+    font-size: 15px;
+}
+
+/* UPLOAD */
+
+.upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.upload-box {
+    background: #181818;
+    border: 1px solid #303030;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.upload-box h2 {
+    font-size: 17px;
+    margin: 0 0 5px;
+}
+
+.upload-box p {
+    margin: 0 0 17px;
+    color: #888;
+    font-size: 13px;
+}
+
+.preview {
+    height: 310px;
+    border: 1px dashed #444;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #121212;
+}
+
+.preview span {
+    color: #666;
+    font-size: 14px;
+}
+
+.preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.file-input {
+    display: none;
+}
+
+.upload-button {
+    margin-top: 14px;
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background: #252525;
+    color: #eee;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.upload-button:hover {
+    background: #303030;
+}
+
+/* ANALYZE */
+
+.analyze-area {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.analyze-button {
+    border: none;
+    border-radius: 5px;
+    padding: 12px 24px;
+    background: #eee;
+    color: #111;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.analyze-button:hover {
+    background: #d7d7d7;
+}
+
+.analyze-button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+/* MESSAGE */
+
+.message {
+    margin-top: 18px;
+    padding: 13px 15px;
+    border-radius: 6px;
+    background: #181818;
+    border: 1px solid #2c2c2c;
+    color: #aaa;
+    font-size: 14px;
+    display: none;
+}
+
+/* RESULTS */
+
+.results {
+    margin-top: 40px;
+    display: none;
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.results-header h2 {
+    margin: 0;
+    font-size: 21px;
+}
+
+.confidence {
+    font-size: 13px;
+    color: #8bd19a;
+}
+
+.result-card {
+    background: #181818;
+    border: 1px solid #303030;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.main-result {
+    padding: 22px;
+    border-bottom: 1px solid #2b2b2b;
+}
+
+.card-name {
+    font-size: 25px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.description {
+    color: #999;
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+/* DETAILS */
+
+.details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.detail {
+    padding: 16px 20px;
+    border-right: 1px solid #2b2b2b;
+    border-bottom: 1px solid #2b2b2b;
+}
+
+.detail:nth-child(3n) {
+    border-right: none;
+}
+
+.detail-label {
+    color: #777;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 5px;
+}
+
+.detail-value {
+    font-size: 14px;
+    color: #eee;
+    word-break: break-word;
+}
+
+/* EVIDENCE */
+
+.evidence {
+    padding: 20px;
+}
+
+.evidence h3 {
+    font-size: 15px;
+    margin: 0 0 12px;
+}
+
+.evidence ul {
+    margin: 0;
+    padding-left: 18px;
+    color: #999;
+}
+
+.evidence li {
+    margin-bottom: 7px;
+    font-size: 13px;
+}
+
+/* SEARCH */
+
+.search-box {
+    margin-top: 20px;
+    padding: 18px;
+    background: #151515;
+    border: 1px solid #292929;
+    border-radius: 7px;
+}
+
+.search-box h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+}
+
+.search-query {
+    color: #aaa;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* MARKET */
+
+.market-section {
+    margin-top: 30px;
+    padding: 22px;
+    border: 1px solid #303030;
+    border-radius: 8px;
+    background: #181818;
+}
+
+.market-section h2 {
+    margin: 0 0 6px;
+    font-size: 19px;
+}
+
+.market-section p {
+    margin: 0;
+    color: #777;
+    font-size: 13px;
+}
+
+/* FOOTER */
+
+.footer {
+    text-align: center;
+    color: #555;
+    font-size: 12px;
+    margin-top: 45px;
+}
+
+/* TABLET */
+
+@media (max-width: 750px) {
+
+    .upload-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .details {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .detail:nth-child(3n) {
+        border-right: 1px solid #2b2b2b;
+    }
+
+    .detail:nth-child(2n) {
+        border-right: none;
+    }
+
+    .preview {
+        height: 260px;
+    }
+
+    .header {
+        padding: 0 16px;
+    }
+}
+
+/* PHONE */
+
+@media (max-width: 480px) {
+
+    .container {
+        width: calc(100% - 20px);
+        margin-top: 25px;
+    }
+
+    .intro h1 {
+        font-size: 25px;
+    }
+
+    .details {
+        grid-template-columns: 1fr;
+    }
+
+    .detail {
+        border-right: none !important;
+    }
+
+    .preview {
+        height: 300px;
+    }
+
+    .analyze-area {
+        justify-content: stretch;
+    }
+
+    .analyze-button {
+        width: 100%;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<header class="header">
+
+    <div>
+        <span class="logo">CardForge</span>
+        <span class="version">V7</span>
+    </div>
+
+    <div class="status">
+        ● Ready
+    </div>
+
+</header>
+
+
+<main class="container">
+
+    <section class="intro">
+
+        <h1>Card Scanner</h1>
+
+        <p>
+            Upload the front and back of a card to identify it.
+        </p>
+
+    </section>
+
+
+    <!-- IMAGE UPLOADS -->
+
+    <section class="upload-grid">
+
+        <!-- FRONT -->
+
+        <div class="upload-box">
+
+            <h2>Front of Card</h2>
+
+            <p>
+                Upload a clear picture of the front.
+            </p>
+
+            <div
+                class="preview"
+                id="frontPreview"
+            >
+                <span>
+                    No image selected
+                </span>
+            </div>
+
+            <input
+                type="file"
+                id="frontInput"
+                class="file-input"
+                accept="image/*"
+            >
+
+            <button
+                class="upload-button"
+                onclick="document.getElementById('frontInput').click()"
+            >
+                Choose Front Image
+            </button>
+
+        </div>
+
+
+        <!-- BACK -->
+
+        <div class="upload-box">
+
+            <h2>Back of Card</h2>
+
+            <p>
+                Upload a clear picture of the back.
+            </p>
+
+            <div
+                class="preview"
+                id="backPreview"
+            >
+                <span>
+                    No image selected
+                </span>
+            </div>
+
+            <input
+                type="file"
+                id="backInput"
+                class="file-input"
+                accept="image/*"
+            >
+
+            <button
+                class="upload-button"
+                onclick="document.getElementById('backInput').click()"
+            >
+                Choose Back Image
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- ANALYZE BUTTON -->
+
+    <div class="analyze-area">
+
+        <button
+            id="analyzeButton"
+            class="analyze-button"
+            disabled
+        >
+            Analyze Card
+        </button>
+
+    </div>
+
+
+    <!-- STATUS MESSAGE -->
+
+    <div
+        id="message"
+        class="message"
+    ></div>
+
+
+    <!-- RESULTS -->
+
+    <section
+        id="results"
+        class="results"
+    >
+
+        <div class="results-header">
+
+            <h2>
+                Identification
+            </h2>
+
+            <div
+                id="confidence"
+                class="confidence"
+            ></div>
+
+        </div>
+
+
+        <div class="result-card">
+
+
+            <!-- MAIN RESULT -->
+
+            <div class="main-result">
+
+                <div
+                    id="cardName"
+                    class="card-name"
+                >
+                    Unknown Card
+                </div>
+
+                <div
+                    id="description"
+                    class="description"
+                ></div>
+
+            </div>
+
+
+            <!-- CARD DETAILS -->
+
+            <div class="details">
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Type
+                    </div>
+
+                    <div
+                        id="cardType"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Category
+                    </div>
+
+                    <div
+                        id="category"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Player / Character
+                    </div>
+
+                    <div
+                        id="player"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Sport
+                    </div>
+
+                    <div
+                        id="sport"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Team
+                    </div>
+
+                    <div
+                        id="team"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Year
+                    </div>
+
+                    <div
+                        id="year"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Manufacturer
+                    </div>
+
+                    <div
+                        id="manufacturer"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Set
+                    </div>
+
+                    <div
+                        id="set"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Card Number
+                    </div>
+
+                    <div
+                        id="cardNumber"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Rarity
+                    </div>
+
+                    <div
+                        id="rarity"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Parallel / Variant
+                    </div>
+
+                    <div
+                        id="parallel"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Edition
+                    </div>
+
+                    <div
+                        id="edition"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Language
+                    </div>
+
+                    <div
+                        id="language"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Serial Number
+                    </div>
+
+                    <div
+                        id="serialNumber"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Rookie
+                    </div>
+
+                    <div
+                        id="rookie"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        First Edition
+                    </div>
+
+                    <div
+                        id="firstEdition"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Autograph
+                    </div>
+
+                    <div
+                        id="autograph"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Memorabilia
+                    </div>
+
+                    <div
+                        id="memorabilia"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Graded
+                    </div>
+
+                    <div
+                        id="graded"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Grading Company
+                    </div>
+
+                    <div
+                        id="gradingCompany"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+                <div class="detail">
+                    <div class="detail-label">
+                        Grade
+                    </div>
+
+                    <div
+                        id="grade"
+                        class="detail-value"
+                    >
+                        Unknown
+                    </div>
+                </div>
+
+
+            </div>
+
+
+            <!-- EVIDENCE -->
+
+            <div class="evidence">
+
+                <h3>
+                    Identification Evidence
+                </h3>
+
+                <ul id="evidenceList"></ul>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- SEARCH QUERY -->
+
+        <div class="search-box">
+
+            <h3>
+                Search Query
+            </h3>
+
+            <div
+                id="searchQuery"
+                class="search-query"
+            ></div>
+
+        </div>
+
+
+        <!-- MARKET -->
+
+        <div class="market-section">
+
+            <h2>
+                Market Listings
+            </h2>
+
+            <p>
+                eBay active listings will appear here once the eBay API is connected.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <div class="footer">
+        CardForge • Universal collectible card scanner
+    </div>
+
+</main>
+
+
+<script>
+
+/*
+========================================
+CARDFORGE FRONTEND
+========================================
+*/
+
+let frontImage = null;
+let backImage = null;
+
+
+/* ELEMENTS */
+
+const frontInput =
+    document.getElementById("frontInput");
+
+const backInput =
+    document.getElementById("backInput");
+
+const frontPreview =
+    document.getElementById("frontPreview");
+
+const backPreview =
+    document.getElementById("backPreview");
+
+const analyzeButton =
+    document.getElementById("analyzeButton");
+
+const message =
+    document.getElementById("message");
+
+const results =
+    document.getElementById("results");
+
+
+/* IMAGE INPUT */
+
+frontInput.addEventListener(
+    "change",
+    function () {
+
+        handleImage(
+            this.files[0],
+            "front"
+        );
+
+    }
+);
+
+
+backInput.addEventListener(
+    "change",
+    function () {
+
+        handleImage(
+            this.files[0],
+            "back"
+        );
+
+    }
+);
+
+
+/* IMAGE HANDLER */
+
+function handleImage(file, side) {
+
+    if (!file) {
+        return;
+    }
+
+    const reader =
+        new FileReader();
+
+
+    reader.onload =
+        function (event) {
+
+            if (side === "front") {
+
+                frontImage =
+                    event.target.result;
+
+                frontPreview.innerHTML =
+                    `<img
+                        src="${frontImage}"
+                        alt="Front of card"
+                    >`;
+
+            }
+
+            else {
+
+                backImage =
+                    event.target.result;
+
+                backPreview.innerHTML =
+                    `<img
+                        src="${backImage}"
+                        alt="Back of card"
+                    >`;
+
+            }
+
+
+            updateAnalyzeButton();
+
+        };
+
+
+    reader.readAsDataURL(file);
+}
+
+
+/* BUTTON STATE */
+
+function updateAnalyzeButton() {
+
+    analyzeButton.disabled =
+        !(frontImage && backImage);
+
+
+    if (
+        frontImage &&
+        backImage
+    ) {
+
+        analyzeButton.textContent =
+            "Analyze Card";
+
+    }
+
+}
+
+
+/* MESSAGES */
+
+function showMessage(text) {
+
+    message.style.display =
+        "block";
+
+    message.textContent =
+        text;
+
+}
+
+
+function hideMessage() {
+
+    message.style.display =
+        "none";
+
+}
+
+
+/* SAFE VALUES */
+
+function valueOrUnknown(value) {
+
+    if (
+        value === null ||
+        value === undefined ||
+        value === "" ||
+        value === "null"
+    ) {
+
+        return "Unknown";
+
+    }
+
+    return value;
+
+}
+
+
+/* SET RESULT VALUE */
+
+function setValue(id, value) {
+
+    document.getElementById(id)
+        .textContent =
+        valueOrUnknown(value);
+
+}
+
+
+/* ANALYZE CARD */
+
+analyzeButton.addEventListener(
+    "click",
+    async function () {
+
+        if (
+            !frontImage ||
+            !backImage
+        ) {
+
+            return;
+
+        }
+
+
+        results.style.display =
+            "none";
+
+        hideMessage();
+
+
+        analyzeButton.disabled =
+            true;
+
+        analyzeButton.textContent =
+            "Analyzing...";
+
+
+        showMessage(
+            "Sending the card images for identification..."
+        );
+
+
+        try {
+
+            /*
+            IMPORTANT:
+
+            This uses a relative API URL.
+
+            That means CardForge works from:
+            - Mac
+            - iPhone
+            - iPad
+            - Any device connected to this server
+            */
+
+            const response =
+                await fetch(
+                    "/api/analyze-card",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                frontImage:
+                                    frontImage,
+
+                                backImage:
+                                    backImage
+                            })
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (
+                !response.ok ||
+                !data.success
+            ) {
+
+                throw new Error(
+                    data.error ||
+                    "Card analysis failed."
+                );
+
+            }
+
+
+            const card =
+                data.card;
+
+
+            /* MAIN INFO */
+
+            setValue(
+                "cardName",
+                card.cardName
+            );
+
+
+            setValue(
+                "cardType",
+                card.cardType
+            );
+
+
+            setValue(
+                "category",
+                card.category
+            );
+
+
+            setValue(
+                "player",
+                card.playerOrCharacter
+            );
+
+
+            setValue(
+                "sport",
+                card.sport
+            );
+
+
+            setValue(
+                "team",
+                card.team
+            );
+
+
+            setValue(
+                "year",
+                card.year
+            );
+
+
+            setValue(
+                "manufacturer",
+                card.manufacturer
+            );
+
+
+            setValue(
+                "set",
+                card.set
+            );
+
+
+            setValue(
+                "cardNumber",
+                card.cardNumber
+            );
+
+
+            setValue(
+                "rarity",
+                card.rarity
+            );
+
+
+            setValue(
+                "parallel",
+                card.parallelOrVariant
+            );
+
+
+            setValue(
+                "edition",
+                card.edition
+            );
+
+
+            setValue(
+                "language",
+                card.language
+            );
+
+
+            setValue(
+                "serialNumber",
+                card.serialNumber
+            );
+
+
+            setValue(
+                "rookie",
+                card.rookie
+            );
+
+
+            setValue(
+                "firstEdition",
+                card.firstEdition
+            );
+
+
+            setValue(
+                "autograph",
+                card.autograph
+            );
+
+
+            setValue(
+                "memorabilia",
+                card.memorabilia
+            );
+
+
+            setValue(
+                "graded",
+                card.graded
+            );
+
+
+            setValue(
+                "gradingCompany",
+                card.gradingCompany
+            );
+
+
+            setValue(
+                "grade",
+                card.grade
+            );
+
+
+            /* DESCRIPTION */
+
+            document.getElementById(
+                "description"
+            ).textContent =
+                valueOrUnknown(
+                    card.description
+                );
+
+
+            /* CONFIDENCE */
+
+            document.getElementById(
+                "confidence"
+            ).textContent =
+                "Confidence: " +
+                valueOrUnknown(
+                    card.confidence
+                ) +
+                "%";
+
+
+            /* EVIDENCE */
+
+            const evidenceList =
+                document.getElementById(
+                    "evidenceList"
+                );
+
+
+            evidenceList.innerHTML =
+                "";
+
+
+            if (
+                Array.isArray(
+                    card.identificationEvidence
+                ) &&
+                card.identificationEvidence.length > 0
+            ) {
+
+                card.identificationEvidence
+                    .forEach(
+                        function (item) {
+
+                            const li =
+                                document.createElement(
+                                    "li"
+                                );
+
+                            li.textContent =
+                                item;
+
+                            evidenceList
+                                .appendChild(li);
+
+                        }
+                    );
+
+            }
+
+            else {
+
+                const li =
+                    document.createElement(
+                        "li"
+                    );
+
+                li.textContent =
+                    "No additional evidence provided.";
+
+                evidenceList
+                    .appendChild(li);
+
+            }
+
+
+            /* SEARCH QUERY */
+
+            document.getElementById(
+                "searchQuery"
+            ).textContent =
+                valueOrUnknown(
+                    card.searchQuery
+                );
+
+
+            /* SHOW RESULTS */
+
+            results.style.display =
+                "block";
+
+
+            hideMessage();
+
+
+            results.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+
+
+            showMessage(
+                "There was a problem analyzing the card: " +
+                error.message
+            );
+
+        }
+
+
+        finally {
+
+            analyzeButton.disabled =
+                !(frontImage && backImage);
+
+            analyzeButton.textContent =
+                "Analyze Card";
+
+        }
+
+    }
+);
+
+</script>
+
+</body>
+</html>
+```
+
+**After replacing it:**
+
+1. Save `index.html` with **⌘ + S**
+2. Make sure your CardForge backend is still running in Terminal
+3. Refresh CardForge on your iPhone
+4. Upload the **front**
+5. Upload the **back**
+6. Tap **Analyze Card**
+
+The important fix is already built in: `fetch("/api/analyze-card")`. So the iPhone will send the images to the CardForge server running on your Mac instead of trying to contact the iPhone itself. 🔥
+
+Once this works, we can move to the **next CardForge version**, where the identification results can feed directly into the eBay active-listing search.
