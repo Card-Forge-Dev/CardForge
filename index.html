@@ -1,2113 +1,2136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-    >
-
-    <title>CardForge</title>
-
-    <style>
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            min-height: 100%;
-            background: #000;
-            color: #fff;
-            font-family:
-                -apple-system,
-                BlinkMacSystemFont,
-                "SF Pro Display",
-                "SF Pro Text",
-                Arial,
-                sans-serif;
-        }
-
-        body {
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        button,
-        input {
-            font: inherit;
-        }
-
-        button {
-            cursor: pointer;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* =====================================
-           INTRO
-        ===================================== */
-
-        #introScreen {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 30px;
-        }
-
-        .introContent {
-            width: 100%;
-            max-width: 520px;
-        }
-
-        .introText {
-            font-size: clamp(38px, 8vw, 72px);
-            font-weight: 600;
-            letter-spacing: -2px;
-            opacity: 0;
-            transform: translateY(12px);
-            transition:
-                opacity 0.7s ease,
-                transform 0.7s ease;
-        }
-
-        .introText.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .introText.fadeOut {
-            opacity: 0;
-            transform: translateY(-12px);
-        }
-
-        /* =====================================
-           APP
-        ===================================== */
-
-        #app {
-            min-height: 100vh;
-            background:
-                radial-gradient(
-                    circle at top,
-                    #181818 0%,
-                    #080808 38%,
-                    #000 75%
-                );
-        }
-
-        .page {
-            width: 100%;
-            max-width: 1100px;
-            margin: 0 auto;
-            padding:
-                max(24px, env(safe-area-inset-top))
-                20px
-                max(30px, env(safe-area-inset-bottom))
-                20px;
-        }
-
-        .topBar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-            margin-bottom: 28px;
-        }
-
-        .brand {
-            font-size: 26px;
-            font-weight: 700;
-            letter-spacing: -1px;
-        }
-
-        .topButton {
-            border: 1px solid #333;
-            background: #111;
-            color: #fff;
-            padding: 10px 15px;
-            border-radius: 12px;
-            font-size: 14px;
-        }
-
-        .topButton:active {
-            transform: scale(0.97);
-        }
-
-        .welcomeMessage {
-            margin-bottom: 30px;
-        }
-
-        .welcomeMessage h1 {
-            margin: 0;
-            font-size: clamp(32px, 7vw, 52px);
-            letter-spacing: -1.5px;
-        }
-
-        .welcomeMessage p {
-            margin: 9px 0 0;
-            color: #999;
-            font-size: 17px;
-        }
-
-        /* =====================================
-           SCANNER
-        ===================================== */
-
-        .scannerCard {
-            background: rgba(18, 18, 18, 0.95);
-            border: 1px solid #252525;
-            border-radius: 24px;
-            padding: 22px;
-        }
-
-        .sectionTitle {
-            margin: 0 0 7px;
-            font-size: 25px;
-        }
-
-        .sectionSubtitle {
-            margin: 0 0 24px;
-            color: #8f8f8f;
-            line-height: 1.5;
-        }
-
-        .uploadGrid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 14px;
-        }
-
-        .uploadBox {
-            position: relative;
-            min-height: 250px;
-            border: 1px dashed #444;
-            border-radius: 18px;
-            background: #0c0c0c;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .uploadBoxContent {
-            text-align: center;
-            padding: 20px;
-            color: #aaa;
-        }
-
-        .uploadLabel {
-            display: block;
-            font-size: 17px;
-            color: #fff;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .uploadHint {
-            font-size: 13px;
-            line-height: 1.4;
-        }
-
-        .fileInput {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        .previewImage {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: #050505;
-        }
-
-        .removeImage {
-            position: absolute;
-            top: 9px;
-            right: 9px;
-            z-index: 5;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 0;
-            background: rgba(0, 0, 0, 0.8);
-            color: #fff;
-            font-size: 18px;
-        }
-
-        .analyzeButton {
-            width: 100%;
-            margin-top: 18px;
-            padding: 17px;
-            border: 0;
-            border-radius: 15px;
-            background: #fff;
-            color: #000;
-            font-size: 17px;
-            font-weight: 700;
-        }
-
-        .analyzeButton:disabled {
-            opacity: 0.35;
-            cursor: not-allowed;
-        }
-
-        .statusText {
-            text-align: center;
-            color: #888;
-            margin-top: 14px;
-            min-height: 20px;
-            font-size: 14px;
-        }
-
-        /* =====================================
-           RESULTS
-        ===================================== */
-
-        .resultCard {
-            background: #111;
-            border: 1px solid #262626;
-            border-radius: 22px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .resultHeader {
-            display: flex;
-            justify-content: space-between;
-            gap: 15px;
-            align-items: flex-start;
-        }
-
-        .resultTitle {
-            margin: 0;
-            font-size: 27px;
-            line-height: 1.15;
-        }
-
-        .confidence {
-            flex-shrink: 0;
-            padding: 7px 10px;
-            border-radius: 9px;
-            background: #1c1c1c;
-            color: #aaa;
-            font-size: 12px;
-        }
-
-        .detailsGrid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-top: 22px;
-        }
-
-        .detail {
-            background: #171717;
-            border-radius: 13px;
-            padding: 13px;
-        }
-
-        .detailLabel {
-            color: #777;
-            font-size: 12px;
-            margin-bottom: 5px;
-        }
-
-        .detailValue {
-            color: #fff;
-            font-size: 15px;
-            word-break: break-word;
-        }
-
-        .description {
-            margin-top: 18px;
-            color: #aaa;
-            line-height: 1.55;
-        }
-
-        .actionRow {
-            display: flex;
-            gap: 10px;
-            margin-top: 18px;
-        }
-
-        .secondaryButton {
-            flex: 1;
-            padding: 14px;
-            border-radius: 13px;
-            border: 1px solid #333;
-            background: #171717;
-            color: #fff;
-            font-weight: 600;
-        }
-
-        .primaryButton {
-            flex: 1;
-            padding: 14px;
-            border-radius: 13px;
-            border: 0;
-            background: #fff;
-            color: #000;
-            font-weight: 700;
-        }
-
-        /* =====================================
-           EBAY
-        ===================================== */
-
-        .ebayHeader {
-            margin: 32px 0 15px;
-        }
-
-        .ebayHeader h2 {
-            margin: 0;
-            font-size: 24px;
-        }
-
-        .ebayHeader p {
-            margin: 6px 0 0;
-            color: #777;
-            font-size: 14px;
-        }
-
-        .listingGrid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 14px;
-        }
-
-        .listing {
-            overflow: hidden;
-            background: #111;
-            border: 1px solid #242424;
-            border-radius: 16px;
-        }
-
-        .listingImageContainer {
-            height: 220px;
-            background: #080808;
-        }
-
-        .listingImage {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .listingInfo {
-            padding: 14px;
-        }
-
-        .listingTitle {
-            color: #fff;
-            font-size: 14px;
-            line-height: 1.4;
-            min-height: 58px;
-        }
-
-        .listingPrice {
-            margin-top: 10px;
-            font-size: 19px;
-            font-weight: 700;
-        }
-
-        .listingCondition {
-            color: #777;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-
-        .listingLink {
-            display: block;
-            margin-top: 12px;
-            padding: 11px;
-            border-radius: 10px;
-            background: #fff;
-            color: #000;
-            text-align: center;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .noListings {
-            padding: 25px;
-            text-align: center;
-            background: #111;
-            border: 1px solid #242424;
-            border-radius: 16px;
-            color: #777;
-        }
-
-        /* =====================================
-           COLLECTIONS
-        ===================================== */
-
-        .collectionGrid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-
-        .folderCard {
-            padding: 20px;
-            border-radius: 18px;
-            border: 1px solid #292929;
-            background: #111;
-        }
-
-        .folderName {
-            font-size: 20px;
-            font-weight: 700;
-        }
-
-        .folderCount {
-            margin-top: 6px;
-            color: #777;
-            font-size: 14px;
-        }
-
-        .folderButton {
-            margin-top: 15px;
-            width: 100%;
-            padding: 12px;
-            border-radius: 11px;
-            border: 1px solid #333;
-            background: #171717;
-            color: #fff;
-        }
-
-        .newFolderButton {
-            width: 100%;
-            padding: 16px;
-            margin-bottom: 20px;
-            border-radius: 14px;
-            border: 1px solid #333;
-            background: #111;
-            color: #fff;
-            font-weight: 600;
-        }
-
-        .collectionCard {
-            background: #111;
-            border: 1px solid #252525;
-            border-radius: 18px;
-            padding: 15px;
-            margin-bottom: 14px;
-        }
-
-        .collectionCardImage {
-            width: 100%;
-            max-height: 330px;
-            object-fit: contain;
-            background: #050505;
-            border-radius: 12px;
-        }
-
-        .collectionCardTitle {
-            margin-top: 13px;
-            font-weight: 700;
-            font-size: 17px;
-        }
-
-        .backButton {
-            margin-bottom: 20px;
-            padding: 10px 14px;
-            border-radius: 11px;
-            border: 1px solid #333;
-            background: #111;
-            color: #fff;
-        }
-
-        /* =====================================
-           RESPONSIVE
-        ===================================== */
-
-        @media (max-width: 800px) {
-            .listingGrid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 600px) {
-            .page {
-                padding-left: 15px;
-                padding-right: 15px;
-            }
-
-            .uploadGrid {
-                grid-template-columns: 1fr;
-            }
-
-            .uploadBox {
-                min-height: 290px;
-            }
-
-            .detailsGrid {
-                grid-template-columns: 1fr;
-            }
-
-            .listingGrid {
-                grid-template-columns: 1fr;
-            }
-
-            .listingImageContainer {
-                height: 280px;
-            }
-
-            .collectionGrid {
-                grid-template-columns: 1fr;
-            }
-
-            .actionRow {
-                flex-direction: column;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<title>CardForge</title>
+
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #050505;
+  --panel: #111;
+  --line: #292929;
+  --muted: #929292;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #050505;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "SF Pro Text", Arial, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.hidden {
+  display: none !important;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 3px;
+}
+
+#introScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 30px;
+}
+
+.introText {
+  font-size: clamp(38px, 8vw, 72px);
+  font-weight: 650;
+  letter-spacing: -2px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: .7s;
+}
+
+.introText.visible {
+  opacity: 1;
+  transform: none;
+}
+
+.introText.fadeOut {
+  opacity: 0;
+  transform: translateY(-12px);
+}
+
+#app {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #181818, #080808 38%, #000 75%);
+}
+
+.page {
+  max-width: 1180px;
+  margin: auto;
+  padding: max(24px, env(safe-area-inset-top)) 18px
+    max(34px, env(safe-area-inset-bottom));
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.brand {
+  font-size: 25px;
+  font-weight: 750;
+  letter-spacing: -1px;
+}
+
+.topActions,
+.toolbar,
+.cardActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.topButton,
+.secondaryButton,
+.backButton,
+.toolButton,
+.folderButton {
+  border: 1px solid #333;
+  background: #111;
+  color: #fff;
+  padding: 10px 13px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.welcomeMessage {
+  margin-bottom: 28px;
+}
+
+.welcomeMessage h1 {
+  margin: 0;
+  font-size: clamp(32px, 7vw, 52px);
+  letter-spacing: -1.5px;
+}
+
+.welcomeMessage p,
+.pageIntro {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.scannerCard,
+.panel,
+.resultCard,
+.resultPanel,
+.folderCard,
+.collectionCard,
+.metricCard {
+  background: #111;
+  border: 1px solid #262626;
+  border-radius: 20px;
+  padding: 19px;
+  margin-bottom: 15px;
+}
+
+.sectionTitle {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.sectionSubtitle {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.uploadGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.uploadBox {
+  position: relative;
+  min-height: 245px;
+  border: 1px dashed #444;
+  border-radius: 18px;
+  background: #0b0b0b;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uploadBoxContent {
+  text-align: center;
+  padding: 20px;
+  color: #aaa;
+}
+
+.uploadLabel {
+  display: block;
+  color: #fff;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+
+.uploadHint {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.fileInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.previewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #050505;
+}
+
+.removeImage {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: 0;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  background: #000;
+  color: #fff;
+  font-size: 20px;
+}
+
+.analyzeButton,
+.primaryButton {
+  background: #fff;
+  color: #000;
+  border: 0;
+  font-weight: 750;
+}
+
+.analyzeButton {
+  width: 100%;
+  padding: 16px;
+  margin-top: 18px;
+  border-radius: 14px;
+}
+
+.statusText {
+  text-align: center;
+  color: #999;
+  margin-top: 12px;
+  min-height: 20px;
+}
+
+.progressTrack {
+  height: 4px;
+  background: #292929;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.progressBar {
+  height: 100%;
+  width: 35%;
+  background: #fff;
+  animation: slide 1s infinite alternate;
+}
+
+@keyframes slide {
+  to {
+    transform: translateX(180%);
+  }
+}
+
+.backButton {
+  margin-bottom: 18px;
+}
+
+.pageHeading {
+  font-size: 32px;
+  letter-spacing: -1px;
+  margin: 0 0 8px;
+}
+
+.pageIntro {
+  margin: 0 0 20px;
+}
+
+.resultHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.resultTitle {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 32px);
+  line-height: 1.15;
+}
+
+.confidence,
+.chip,
+.matchBadge {
+  display: inline-block;
+  padding: 7px 9px;
+  background: #1c1c1c;
+  border: 1px solid #333;
+  border-radius: 9px;
+  color: #ddd;
+  font-size: 12px;
+  white-space: normal;
+}
+
+.confidence.high {
+  color: #a8e7b1;
+}
+
+.confidence.low {
+  color: #ffca91;
+}
+
+.chipRow {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.detail {
+  background: #181818;
+  padding: 12px;
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.detailLabel,
+.metricLabel {
+  font-size: 12px;
+  color: #858585;
+  margin-bottom: 6px;
+}
+
+.detailValue {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.description {
+  color: #aaa;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.actionRow {
+  display: flex;
+  gap: 9px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.secondaryButton,
+.primaryButton {
+  flex: 1;
+  min-width: 140px;
+  padding: 13px;
+  border-radius: 12px;
+}
+
+.sectionHeading {
+  font-size: 23px;
+  margin: 27px 0 10px;
+}
+
+.sectionNote {
+  font-size: 13px;
+  color: #888;
+  line-height: 1.5;
+}
+
+.twoColumn {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.evidenceList {
+  padding-left: 20px;
+  color: #ddd;
+  line-height: 1.6;
+}
+
+.alternative,
+.conditionItem {
+  border-top: 1px solid #292929;
+  padding: 12px 0;
+}
+
+.alternative:first-child,
+.conditionItem:first-child {
+  border-top: 0;
+}
+
+.alternative h4,
+.conditionItem strong {
+  margin: 0 0 6px;
+  display: block;
+}
+
+.alternative p,
+.conditionItem p {
+  font-size: 13px;
+  color: #aaa;
+  line-height: 1.5;
+  margin: 5px 0;
+}
+
+.certainty {
+  color: #888;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.priceMetrics,
+.dashboardMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metricCard {
+  margin: 0;
+  padding: 14px;
+}
+
+.metricValue {
+  font-size: 23px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.metricCaption {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.4;
+  margin-top: 6px;
+}
+
+.ebayHeader {
+  margin: 28px 0 12px;
+}
+
+.ebayHeader h2 {
+  font-size: 24px;
+  margin: 0;
+}
+
+.ebayHeader p {
+  color: #888;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.listingControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 13px;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ddd;
+  font-size: 13px;
+}
+
+.listingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.listing {
+  background: #111;
+  border: 1px solid #292929;
+  border-radius: 16px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.listingImageContainer {
+  height: 210px;
+  background: #080808;
+}
+
+.listingImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.listingInfo {
+  padding: 13px;
+}
+
+.listingTitle {
+  font-size: 14px;
+  line-height: 1.4;
+  min-height: 58px;
+  overflow-wrap: anywhere;
+}
+
+.listingPrice {
+  font-size: 19px;
+  font-weight: 750;
+  margin-top: 10px;
+}
+
+.listingCondition,
+.matchReasons {
+  font-size: 12px;
+  color: #888;
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+.listingLink {
+  display: block;
+  text-align: center;
+  background: #fff;
+  color: #000;
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 11px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.noListings,
+.emptyState {
+  padding: 23px;
+  text-align: center;
+  border: 1px solid #292929;
+  border-radius: 15px;
+  color: #888;
+  line-height: 1.5;
+  background: #111;
+}
+
+.inputField,
+.selectField {
+  background: #090909;
+  border: 1px solid #383838;
+  border-radius: 11px;
+  padding: 12px;
+  color: #fff;
+  width: 100%;
+  min-width: 0;
+}
+
+.formRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.formRow > * {
+  flex: 1;
+}
+
+.collectionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.folderCard {
+  margin: 0;
+}
+
+.folderName {
+  font-size: 19px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.folderCount {
+  font-size: 13px;
+  color: #888;
+  margin: 6px 0 12px;
+}
+
+.folderButton {
+  flex: 1;
+}
+
+.newFolderButton {
+  width: 100%;
+  padding: 15px;
+  margin-bottom: 18px;
+  border-radius: 13px;
+  border: 1px solid #333;
+  background: #111;
+  color: #fff;
+}
+
+.collectionCardImage {
+  width: 100%;
+  max-height: 270px;
+  object-fit: contain;
+  background: #050505;
+  border-radius: 10px;
+}
+
+.collectionCardTitle {
+  font-weight: 750;
+  margin-top: 12px;
+}
+
+.cardMeta {
+  color: #888;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 6px;
+}
+
+.dashboardMetrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translate(-50%, 20px);
+  opacity: 0;
+  transition: .2s;
+  z-index: 10000;
+  background: #fff;
+  color: #000;
+  border-radius: 12px;
+  padding: 12px 16px;
+  max-width: calc(100vw - 30px);
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (max-width: 850px) {
+  .listingGrid,
+  .collectionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detailsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboardMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+
+  .topBar {
+    align-items: flex-start;
+  }
+
+  .topActions {
+    justify-content: flex-end;
+  }
+
+  .topButton {
+    padding: 8px;
+    font-size: 11px;
+  }
+
+  .uploadGrid,
+  .twoColumn,
+  .priceMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .uploadBox {
+    min-height: 260px;
+  }
+
+  .detailsGrid,
+  .listingGrid,
+  .collectionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .listingImageContainer {
+    height: 265px;
+  }
+
+  .formRow,
+  .actionRow {
+    flex-direction: column;
+  }
+
+  .dashboardMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+</style>
 </head>
 
 <body>
-
-<!-- =====================================
-     INTRO SCREEN
-===================================== -->
-
 <div id="introScreen">
-    <div class="introContent">
-
-        <div
-            id="introText"
-            class="introText"
-        >
-            Hello
-        </div>
-
-    </div>
+  <div id="introText" class="introText">Hello</div>
 </div>
 
+<div id="app" class="hidden">
+<main class="page">
 
-<!-- =====================================
-     APP
-===================================== -->
+<header class="topBar">
+  <div class="brand">CardForge</div>
+  <nav class="topActions">
+    <button class="topButton" data-page="scannerPage">Scanner</button>
+    <button class="topButton" data-page="dashboardPage">Dashboard</button>
+    <button class="topButton" data-page="collectionsPage">Collections</button>
+    <button class="topButton" data-page="showModePage">Card Show Mode</button>
+  </nav>
+</header>
 
-<div
-    id="app"
-    class="hidden"
->
+<section id="scannerPage">
+  <div class="welcomeMessage">
+    <h1>Welcome to CardForge</h1>
+    <p>Identify collectible cards, inspect the evidence, and compare active marketplace listings.</p>
+  </div>
 
-    <div class="page">
+  <div class="scannerCard">
+    <h2 class="sectionTitle">Scan your card</h2>
+    <p class="sectionSubtitle">Add a clear front photo. The back can help confirm the set, number, and edition.</p>
 
-        <div class="topBar">
-
-            <div class="brand">
-                CardForge
-            </div>
-
-            <button
-                id="collectionsButton"
-                class="topButton"
-            >
-                Collections
-            </button>
-
+    <div class="uploadGrid">
+      <div id="frontBox" class="uploadBox">
+        <div id="frontContent" class="uploadBoxContent">
+          <span class="uploadLabel">Front</span>
+          <span class="uploadHint">Tap to take a photo or choose an image.</span>
         </div>
-
-
-        <!-- SCANNER PAGE -->
-
-        <section id="scannerPage">
-
-            <div class="welcomeMessage">
-
-                <h1>
-                    Welcome to CardForge
-                </h1>
-
-                <p>
-                    Scan a card to identify it and find active eBay listings.
-                </p>
-
-            </div>
-
-
-            <div class="scannerCard">
-
-                <h2 class="sectionTitle">
-                    Scan your card
-                </h2>
-
-                <p class="sectionSubtitle">
-                    Add the front of the card. Adding the back can improve identification.
-                </p>
-
-
-                <div class="uploadGrid">
-
-                    <!-- FRONT -->
-
-                    <div
-                        id="frontUploadBox"
-                        class="uploadBox"
-                    >
-
-                        <div
-                            id="frontUploadContent"
-                            class="uploadBoxContent"
-                        >
-
-                            <span class="uploadLabel">
-                                Front
-                            </span>
-
-                            <span class="uploadHint">
-                                Tap to take a photo or choose an image.
-                            </span>
-
-                        </div>
-
-                        <input
-                            id="frontInput"
-                            class="fileInput"
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                        >
-
-                    </div>
-
-
-                    <!-- BACK -->
-
-                    <div
-                        id="backUploadBox"
-                        class="uploadBox"
-                    >
-
-                        <div
-                            id="backUploadContent"
-                            class="uploadBoxContent"
-                        >
-
-                            <span class="uploadLabel">
-                                Back
-                            </span>
-
-                            <span class="uploadHint">
-                                Optional, but recommended.
-                            </span>
-
-                        </div>
-
-                        <input
-                            id="backInput"
-                            class="fileInput"
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <button
-                    id="analyzeButton"
-                    class="analyzeButton"
-                    disabled
-                >
-                    Analyze Card
-                </button>
-
-                <div
-                    id="statusText"
-                    class="statusText"
-                ></div>
-
-            </div>
-
-        </section>
-
-
-        <!-- RESULTS PAGE -->
-
-        <section
-            id="resultsPage"
-            class="hidden"
-        >
-
-            <button
-                id="scanAnotherButton"
-                class="backButton"
-            >
-                Scan Another Card
-            </button>
-
-
-            <div
-                id="cardResult"
-                class="resultCard"
-            ></div>
-
-
-            <div class="ebayHeader">
-
-                <h2>
-                    Active eBay Listings
-                </h2>
-
-                <p>
-                    Current asking-price listings found on eBay.
-                </p>
-
-            </div>
-
-
-            <div
-                id="listingGrid"
-                class="listingGrid"
-            ></div>
-
-        </section>
-
-
-        <!-- COLLECTIONS PAGE -->
-
-        <section
-            id="collectionsPage"
-            class="hidden"
-        >
-
-            <button
-                id="backToScannerButton"
-                class="backButton"
-            >
-                Back to Scanner
-            </button>
-
-            <h1>
-                Collections
-            </h1>
-
-            <p class="sectionSubtitle">
-                Organize your cards into your own folders.
-            </p>
-
-            <button
-                id="newFolderButton"
-                class="newFolderButton"
-            >
-                Create New Folder
-            </button>
-
-            <div
-                id="collectionGrid"
-                class="collectionGrid"
-            ></div>
-
-        </section>
-
-
-        <!-- FOLDER PAGE -->
-
-        <section
-            id="folderPage"
-            class="hidden"
-        >
-
-            <button
-                id="backToCollectionsButton"
-                class="backButton"
-            >
-                Back to Collections
-            </button>
-
-            <h1 id="folderTitle"></h1>
-
-            <p
-                id="folderSubtitle"
-                class="sectionSubtitle"
-            ></p>
-
-            <div id="folderCards"></div>
-
-        </section>
-
+        <input id="frontInput" class="fileInput" type="file" accept="image/*" capture="environment" aria-label="Front of card">
+      </div>
+
+      <div id="backBox" class="uploadBox">
+        <div id="backContent" class="uploadBoxContent">
+          <span class="uploadLabel">Back</span>
+          <span class="uploadHint">Optional, but recommended.</span>
+        </div>
+        <input id="backInput" class="fileInput" type="file" accept="image/*" capture="environment" aria-label="Back of card">
+      </div>
     </div>
 
+    <button id="analyzeButton" class="analyzeButton" disabled>Identify Card and Find Matches</button>
+    <div id="statusText" class="statusText" aria-live="polite"></div>
+    <div id="progress" class="progressTrack hidden">
+      <div class="progressBar"></div>
+    </div>
+  </div>
+</section>
+
+<section id="resultsPage" class="hidden">
+  <button id="scanAnother" class="backButton">Scan Another Card</button>
+  <div id="cardResult" class="resultCard"></div>
+  <div id="evidenceSection"></div>
+  <div id="priceSection"></div>
+
+  <div class="ebayHeader">
+    <h2>Active eBay Listings</h2>
+    <p>Active asking prices, not completed sales. Match scores estimate title similarity and do not guarantee the exact card.</p>
+  </div>
+
+  <div class="listingControls">
+    <label class="toggleRow">
+      <input id="strongOnly" type="checkbox" checked>
+      Stronger matches only
+    </label>
+
+    <select id="listingSort" class="selectField" style="max-width:210px">
+      <option value="match">Best match</option>
+      <option value="low">Price: low to high</option>
+      <option value="high">Price: high to low</option>
+    </select>
+  </div>
+
+  <div id="listingGrid" class="listingGrid"></div>
+
+  <div class="actionRow">
+    <button id="saveCurrent" class="primaryButton">Save to Collection</button>
+    <button id="exportCurrent" class="secondaryButton">Export Card Details</button>
+  </div>
+</section>
+
+<section id="dashboardPage" class="hidden">
+  <button class="backButton" data-page="scannerPage">Back to Scanner</button>
+  <h1 class="pageHeading">Collection Dashboard</h1>
+  <p class="pageIntro">Inventory saved in this browser. Price totals use saved active asking-price summaries, not appraisals.</p>
+  <div id="dashboardMetrics" class="dashboardMetrics"></div>
+
+  <div class="toolbar">
+    <button id="exportJson" class="toolButton">Export JSON</button>
+    <button id="exportCsv" class="toolButton">Export CSV</button>
+  </div>
+
+  <div class="panel">
+    <h2 class="sectionTitle">Recent additions</h2>
+    <div id="recentCards"></div>
+  </div>
+</section>
+
+<section id="collectionsPage" class="hidden">
+  <button class="backButton" data-page="scannerPage">Back to Scanner</button>
+  <h1 class="pageHeading">Collections</h1>
+  <p class="pageIntro">Organize cards into folders. Collections are currently stored in this browser on this device.</p>
+  <button id="newFolder" class="newFolderButton">Create New Folder</button>
+  <div id="collectionGrid" class="collectionGrid"></div>
+</section>
+
+<section id="folderPage" class="hidden">
+  <button id="backFolders" class="backButton">Back to Collections</button>
+  <h1 id="folderTitle" class="pageHeading"></h1>
+  <p id="folderSubtitle" class="pageIntro"></p>
+
+  <div class="toolbar">
+    <button id="exportFolder" class="toolButton">Export Folder</button>
+  </div>
+
+  <div id="folderCards"></div>
+</section>
+
+<section id="showModePage" class="hidden">
+  <button class="backButton" data-page="scannerPage">Back to Scanner</button>
+  <h1 class="pageHeading">Card Show Mode</h1>
+  <p class="pageIntro">Track cards you are watching, considering, or buying at a show. Session information is saved locally.</p>
+
+  <div class="panel">
+    <h2 class="sectionTitle">Session</h2>
+
+    <div class="formRow">
+      <input id="eventName" class="inputField" placeholder="Show or event name">
+      <input id="budget" class="inputField" type="number" min="0" step=".01" placeholder="Budget (optional)">
+    </div>
+
+    <div class="toolbar">
+      <button id="startSession" class="toolButton">Start / Update Session</button>
+      <button id="endSession" class="toolButton">End Session</button>
+    </div>
+
+    <p id="sessionStatus" class="sectionSubtitle"></p>
+  </div>
+
+  <div id="showMetrics" class="dashboardMetrics"></div>
+
+  <div class="panel">
+    <h2 class="sectionTitle">Track an item</h2>
+    <p class="sectionSubtitle">Scan a card first or enter details manually.</p>
+
+    <div class="formRow">
+      <input id="showItemName" class="inputField" placeholder="Card / item name">
+      <input id="askPrice" class="inputField" type="number" min="0" step=".01" placeholder="Seller asking price">
+    </div>
+
+    <div class="formRow">
+      <input id="offerPrice" class="inputField" type="number" min="0" step=".01" placeholder="Your offer">
+      <input id="paidPrice" class="inputField" type="number" min="0" step=".01" placeholder="Price paid">
+    </div>
+
+    <div class="formRow">
+      <select id="itemStatus" class="selectField">
+        <option value="watching">Watchlist</option>
+        <option value="considering">Considering</option>
+        <option value="purchased">Purchased</option>
+        <option value="passed">Passed</option>
+      </select>
+
+      <input id="itemNotes" class="inputField" placeholder="Notes">
+    </div>
+
+    <button id="addShowItem" class="analyzeButton">Add to Session</button>
+  </div>
+
+  <div class="panel">
+    <h2 class="sectionTitle">Session items</h2>
+    <div id="showItems"></div>
+  </div>
+</section>
+
+</main>
 </div>
 
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script>
-/* =========================================
-   STORAGE
-========================================= */
+"use strict";
 
 const COLLECTIONS_KEY = "cardforge_collections";
+const SHOW_KEY = "cardforge_show_session";
 
+const pages = [
+  "scannerPage",
+  "resultsPage",
+  "dashboardPage",
+  "collectionsPage",
+  "folderPage",
+  "showModePage"
+];
 
-/* =========================================
-   ELEMENTS
-========================================= */
+const $ = (id) => document.getElementById(id);
 
-const introScreen =
-    document.getElementById("introScreen");
-
-const introText =
-    document.getElementById("introText");
-
-const app =
-    document.getElementById("app");
-
-const scannerPage =
-    document.getElementById("scannerPage");
-
-const resultsPage =
-    document.getElementById("resultsPage");
-
-const collectionsPage =
-    document.getElementById("collectionsPage");
-
-const folderPage =
-    document.getElementById("folderPage");
-
-const collectionsButton =
-    document.getElementById("collectionsButton");
-
-const backToScannerButton =
-    document.getElementById("backToScannerButton");
-
-const backToCollectionsButton =
-    document.getElementById("backToCollectionsButton");
-
-const scanAnotherButton =
-    document.getElementById("scanAnotherButton");
-
-const frontInput =
-    document.getElementById("frontInput");
-
-const backInput =
-    document.getElementById("backInput");
-
-const frontUploadBox =
-    document.getElementById("frontUploadBox");
-
-const backUploadBox =
-    document.getElementById("backUploadBox");
-
-const frontUploadContent =
-    document.getElementById("frontUploadContent");
-
-const backUploadContent =
-    document.getElementById("backUploadContent");
-
-const analyzeButton =
-    document.getElementById("analyzeButton");
-
-const statusText =
-    document.getElementById("statusText");
-
-const cardResult =
-    document.getElementById("cardResult");
-
-const listingGrid =
-    document.getElementById("listingGrid");
-
-const newFolderButton =
-    document.getElementById("newFolderButton");
-
-const collectionGrid =
-    document.getElementById("collectionGrid");
-
-const folderTitle =
-    document.getElementById("folderTitle");
-
-const folderSubtitle =
-    document.getElementById("folderSubtitle");
-
-const folderCards =
-    document.getElementById("folderCards");
-
-
-/* =========================================
-   STATE
-========================================= */
-
-let frontImageData = null;
-let backImageData = null;
-
+let frontData = null;
+let backData = null;
 let currentCard = null;
-
-
-/* =========================================
-   INTRO
-========================================= */
-
-function wait(ms) {
-    return new Promise(resolve => {
-        setTimeout(resolve, ms);
-    });
-}
-
-
-async function showIntro() {
-
-    introScreen.classList.remove("hidden");
-    app.classList.add("hidden");
-
-    introText.textContent = "Hello";
-
-    introText.classList.remove("fadeOut");
-
-    introText.classList.add("visible");
-
-    await wait(1400);
-
-    introText.classList.remove("visible");
-    introText.classList.add("fadeOut");
-
-    await wait(650);
-
-    introText.textContent =
-        "Welcome to CardForge";
-
-    introText.classList.remove("fadeOut");
-
-    await wait(50);
-
-    introText.classList.add("visible");
-
-    await wait(1500);
-
-    introText.classList.remove("visible");
-    introText.classList.add("fadeOut");
-
-    await wait(700);
-
-    openApp();
-}
-
-
-function openApp() {
-
-    introScreen.classList.add("hidden");
-
-    app.classList.remove("hidden");
-
-    scannerPage.classList.remove("hidden");
-
-    resultsPage.classList.add("hidden");
-
-    collectionsPage.classList.add("hidden");
-
-    folderPage.classList.add("hidden");
-
-}
-
-
-/* =========================================
-   FILE HANDLING
-========================================= */
-
-frontInput.addEventListener(
-    "change",
-    async () => {
-
-        const file =
-            frontInput.files?.[0];
-
-        if (!file) return;
-
-        frontImageData =
-            await compressImage(file);
-
-        showPreview(
-            frontUploadBox,
-            frontUploadContent,
-            frontImageData,
-            "front"
-        );
-
-        updateAnalyzeButton();
-    }
-);
-
-
-backInput.addEventListener(
-    "change",
-    async () => {
-
-        const file =
-            backInput.files?.[0];
-
-        if (!file) return;
-
-        backImageData =
-            await compressImage(file);
-
-        showPreview(
-            backUploadBox,
-            backUploadContent,
-            backImageData,
-            "back"
-        );
-
-    }
-);
-
-
-function showPreview(
-    box,
-    content,
-    imageData,
-    side
-) {
-
-    content.classList.add("hidden");
-
-    const oldImage =
-        box.querySelector(".previewImage");
-
-    if (oldImage) {
-        oldImage.remove();
-    }
-
-    const oldButton =
-        box.querySelector(".removeImage");
-
-    if (oldButton) {
-        oldButton.remove();
-    }
-
-    const image =
-        document.createElement("img");
-
-    image.src = imageData;
-
-    image.className =
-        "previewImage";
-
-    box.appendChild(image);
-
-    const removeButton =
-        document.createElement("button");
-
-    removeButton.className =
-        "removeImage";
-
-    removeButton.textContent =
-        "×";
-
-    removeButton.type =
-        "button";
-
-    removeButton.addEventListener(
-        "click",
-        (event) => {
-
-            event.preventDefault();
-            event.stopPropagation();
-
-            if (side === "front") {
-
-                frontImageData = null;
-                frontInput.value = "";
-
-            } else {
-
-                backImageData = null;
-                backInput.value = "";
-
-            }
-
-            image.remove();
-            removeButton.remove();
-
-            content.classList.remove("hidden");
-
-            updateAnalyzeButton();
-        }
-    );
-
-    box.appendChild(removeButton);
-}
-
-
-/* =========================================
-   IMAGE COMPRESSION
-========================================= */
-
-function compressImage(file) {
-
-    return new Promise(
-        (resolve, reject) => {
-
-            const reader =
-                new FileReader();
-
-            reader.onload = () => {
-
-                const image =
-                    new Image();
-
-                image.onload = () => {
-
-                    const maxSize = 1400;
-
-                    let width =
-                        image.width;
-
-                    let height =
-                        image.height;
-
-                    if (
-                        width > maxSize ||
-                        height > maxSize
-                    ) {
-
-                        const ratio =
-                            Math.min(
-                                maxSize / width,
-                                maxSize / height
-                            );
-
-                        width =
-                            Math.round(
-                                width * ratio
-                            );
-
-                        height =
-                            Math.round(
-                                height * ratio
-                            );
-                    }
-
-                    const canvas =
-                        document.createElement("canvas");
-
-                    canvas.width =
-                        width;
-
-                    canvas.height =
-                        height;
-
-                    const ctx =
-                        canvas.getContext("2d");
-
-                    ctx.drawImage(
-                        image,
-                        0,
-                        0,
-                        width,
-                        height
-                    );
-
-                    resolve(
-                        canvas.toDataURL(
-                            "image/jpeg",
-                            0.82
-                        )
-                    );
-                };
-
-                image.onerror =
-                    reject;
-
-                image.src =
-                    reader.result;
-            };
-
-            reader.onerror =
-                reject;
-
-            reader.readAsDataURL(file);
-        }
-    );
-}
-
-
-/* =========================================
-   ANALYZE
-========================================= */
-
-function updateAnalyzeButton() {
-
-    analyzeButton.disabled =
-        !frontImageData;
-}
-
-
-analyzeButton.addEventListener(
-    "click",
-    analyzeCard
-);
-
-
-async function analyzeCard() {
-
-    if (!frontImageData) {
-        return;
-    }
-
-    analyzeButton.disabled = true;
-
-    statusText.textContent =
-        "Analyzing card...";
-
-    try {
-
-        const response =
-            await fetch(
-                "/api/analyze-card",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-                    body: JSON.stringify({
-                        frontImage:
-                            frontImageData,
-                        backImage:
-                            backImageData
-                    })
-                }
-            );
-
-        const data =
-            await response.json();
-
-        if (!response.ok) {
-
-            throw new Error(
-                data.error ||
-                "Analysis failed."
-            );
-        }
-
-        currentCard =
-            data.card;
-
-        renderResults(
-            data.card,
-            data.ebayListings || []
-        );
-
-        scannerPage.classList.add("hidden");
-
-        resultsPage.classList.remove("hidden");
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        statusText.textContent =
-            error.message ||
-            "Something went wrong.";
-
-    } finally {
-
-        analyzeButton.disabled =
-            !frontImageData;
-
-    }
-}
-
-
-/* =========================================
-   RESULTS
-========================================= */
-
-function safe(value) {
-
-    if (
-        value === null ||
-        value === undefined ||
-        value === ""
-    ) {
-        return "Not identified";
-    }
-
-    return String(value);
-}
-
-
-function renderResults(
-    card,
-    listings
-) {
-
-    const displayName =
-        card.cardName ||
-        card.player ||
-        "Card identified";
-
-    cardResult.innerHTML = `
-
-        <div class="resultHeader">
-
-            <div>
-
-                <h2 class="resultTitle">
-                    ${escapeHtml(displayName)}
-                </h2>
-
-            </div>
-
-            <div class="confidence">
-                ${safe(card.confidence)}% confidence
-            </div>
-
-        </div>
-
-
-        <div class="detailsGrid">
-
-            ${detail(
-                "Category",
-                card.category
-            )}
-
-            ${detail(
-                "Sport / Franchise",
-                card.sportOrFranchise
-            )}
-
-            ${detail(
-                "Year",
-                card.year
-            )}
-
-            ${detail(
-                "Manufacturer",
-                card.manufacturer
-            )}
-
-            ${detail(
-                "Set",
-                card.set
-            )}
-
-            ${detail(
-                "Player",
-                card.player
-            )}
-
-            ${detail(
-                "Card Number",
-                card.cardNumber
-            )}
-
-            ${detail(
-                "Parallel",
-                card.parallel
-            )}
-
-            ${detail(
-                "Insert",
-                card.insert
-            )}
-
-            ${detail(
-                "Autograph",
-                card.autograph
-                    ? "Yes"
-                    : "No"
-            )}
-
-            ${detail(
-                "Relic",
-                card.relic
-                    ? "Yes"
-                    : "No"
-            )}
-
-            ${detail(
-                "Rookie",
-                card.rookie
-                    ? "Yes"
-                    : "No"
-            )}
-
-        </div>
-
-
-        ${
-            card.description
-                ? `
-                    <div class="description">
-                        ${escapeHtml(
-                            card.description
-                        )}
-                    </div>
-                `
-                : ""
-        }
-
-
-        <div class="actionRow">
-
-            <button
-                class="secondaryButton"
-                onclick="addCardToCollection()"
-            >
-                Add to Collection
-            </button>
-
-            <button
-                class="primaryButton"
-                onclick="analyzeAnotherCard()"
-            >
-                Scan Another
-            </button>
-
-        </div>
-    `;
-
-    renderListings(listings);
-}
-
-
-function detail(
-    label,
-    value
-) {
-
-    return `
-
-        <div class="detail">
-
-            <div class="detailLabel">
-                ${escapeHtml(label)}
-            </div>
-
-            <div class="detailValue">
-                ${escapeHtml(
-                    safe(value)
-                )}
-            </div>
-
-        </div>
-
-    `;
-}
-
-
-/* =========================================
-   EBAY LISTINGS
-========================================= */
-
-function renderListings(
-    listings
-) {
-
-    listingGrid.innerHTML = "";
-
-    if (!listings.length) {
-
-        listingGrid.innerHTML = `
-
-            <div class="noListings">
-                No active eBay listings were found for this card.
-            </div>
-
-        `;
-
-        return;
-    }
-
-    listings.forEach(
-        listing => {
-
-            const card =
-                document.createElement("div");
-
-            card.className =
-                "listing";
-
-            const image =
-                listing.image
-                    ? `
-
-                        <div class="listingImageContainer">
-
-                            <img
-                                class="listingImage"
-                                src="${escapeAttribute(
-                                    listing.image
-                                )}"
-                                alt=""
-                                loading="lazy"
-                            >
-
-                        </div>
-
-                    `
-                    : `
-
-                        <div class="listingImageContainer"></div>
-
-                    `;
-
-            card.innerHTML = `
-
-                ${image}
-
-                <div class="listingInfo">
-
-                    <div class="listingTitle">
-                        ${escapeHtml(
-                            listing.title ||
-                            "eBay listing"
-                        )}
-                    </div>
-
-                    <div class="listingPrice">
-                        ${escapeHtml(
-                            listing.priceDisplay ||
-                            "Price unavailable"
-                        )}
-                    </div>
-
-                    ${
-                        listing.condition
-                            ? `
-
-                                <div class="listingCondition">
-                                    ${escapeHtml(
-                                        listing.condition
-                                    )}
-                                </div>
-
-                            `
-                            : ""
-                    }
-
-                    ${
-                        listing.url
-                            ? `
-
-                                <a
-                                    class="listingLink"
-                                    href="${escapeAttribute(
-                                        listing.url
-                                    )}"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    View on eBay
-                                </a>
-
-                            `
-                            : ""
-                    }
-
-                </div>
-
-            `;
-
-            listingGrid.appendChild(card);
-        }
-    );
-}
-
-
-/* =========================================
-   COLLECTIONS
-========================================= */
-
-function getCollections() {
-
-    try {
-
-        return JSON.parse(
-            localStorage.getItem(
-                COLLECTIONS_KEY
-            ) || "{}"
-        );
-
-    } catch {
-
-        return {};
-    }
-}
-
-
-function saveCollections(
-    collections
-) {
-
-    localStorage.setItem(
-        COLLECTIONS_KEY,
-        JSON.stringify(collections)
-    );
-}
-
-
-function renderCollections() {
-
-    const collections =
-        getCollections();
-
-    collectionGrid.innerHTML = "";
-
-    const names =
-        Object.keys(collections);
-
-    if (!names.length) {
-
-        collectionGrid.innerHTML = `
-
-            <div class="noListings">
-                You don't have any collections yet.
-            </div>
-
-        `;
-
-        return;
-    }
-
-    names.forEach(
-        name => {
-
-            const folder =
-                document.createElement("div");
-
-            folder.className =
-                "folderCard";
-
-            const count =
-                collections[name]?.length ||
-                0;
-
-            folder.innerHTML = `
-
-                <div class="folderName">
-                    ${escapeHtml(name)}
-                </div>
-
-                <div class="folderCount">
-                    ${count}
-                    ${count === 1
-                        ? "card"
-                        : "cards"}
-                </div>
-
-                <button
-                    class="folderButton"
-                    type="button"
-                >
-                    Open Collection
-                </button>
-
-            `;
-
-            folder
-                .querySelector(".folderButton")
-                .addEventListener(
-                    "click",
-                    () => {
-                        openFolder(name);
-                    }
-                );
-
-            collectionGrid.appendChild(folder);
-        }
-    );
-}
-
-
-function createFolder() {
-
-    const name =
-        prompt(
-            "What would you like to name this collection?"
-        );
-
-    if (!name) {
-        return;
-    }
-
-    const cleanName =
-        name.trim();
-
-    if (!cleanName) {
-        return;
-    }
-
-    const collections =
-        getCollections();
-
-    if (collections[cleanName]) {
-
-        alert(
-            "That collection already exists."
-        );
-
-        return;
-    }
-
-    collections[cleanName] = [];
-
-    saveCollections(collections);
-
-    renderCollections();
-}
-
-
-function addCardToCollection() {
-
-    if (!currentCard) {
-        return;
-    }
-
-    const collections =
-        getCollections();
-
-    const names =
-        Object.keys(collections);
-
-    let selectedFolder = null;
-
-    if (!names.length) {
-
-        const name =
-            prompt(
-                "Create your first collection:"
-            );
-
-        if (!name) {
-            return;
-        }
-
-        const cleanName =
-            name.trim();
-
-        if (!cleanName) {
-            return;
-        }
-
-        collections[cleanName] = [];
-
-        selectedFolder =
-            cleanName;
-
-    } else {
-
-        const choice =
-            prompt(
-                "Enter a collection name:\n\n" +
-                names.join("\n")
-            );
-
-        if (!choice) {
-            return;
-        }
-
-        const cleanChoice =
-            choice.trim();
-
-        if (!collections[cleanChoice]) {
-
-            alert(
-                "That collection does not exist."
-            );
-
-            return;
-        }
-
-        selectedFolder =
-            cleanChoice;
-    }
-
-    const savedCard = {
-        ...currentCard,
-        image: frontImageData,
-        savedAt:
-            new Date().toISOString()
-    };
-
-    collections[selectedFolder].push(
-        savedCard
-    );
-
-    saveCollections(collections);
-
-    alert(
-        `Added to ${selectedFolder}.`
-    );
-}
-
-
-function openFolder(name) {
-
-    const collections =
-        getCollections();
-
-    const cards =
-        collections[name] || [];
-
-    folderTitle.textContent =
-        name;
-
-    folderSubtitle.textContent =
-        `${cards.length} ${
-            cards.length === 1
-                ? "card"
-                : "cards"
-        }`;
-
-    folderCards.innerHTML = "";
-
-    if (!cards.length) {
-
-        folderCards.innerHTML = `
-
-            <div class="noListings">
-                This collection is empty.
-            </div>
-
-        `;
-
-    } else {
-
-        cards.forEach(
-            card => {
-
-                const element =
-                    document.createElement("div");
-
-                element.className =
-                    "collectionCard";
-
-                element.innerHTML = `
-
-                    ${
-                        card.image
-                            ? `
-
-                                <img
-                                    class="collectionCardImage"
-                                    src="${escapeAttribute(
-                                        card.image
-                                    )}"
-                                    alt=""
-                                >
-
-                            `
-                            : ""
-                    }
-
-                    <div class="collectionCardTitle">
-                        ${escapeHtml(
-                            card.cardName ||
-                            card.player ||
-                            "Card"
-                        )}
-                    </div>
-
-                    <div class="description">
-
-                        ${escapeHtml(
-                            [
-                                card.year,
-                                card.manufacturer,
-                                card.set,
-                                card.cardNumber
-                            ]
-                            .filter(Boolean)
-                            .join(" • ")
-                        )}
-
-                    </div>
-
-                `;
-
-                folderCards.appendChild(element);
-            }
-        );
-    }
-
-    scannerPage.classList.add("hidden");
-    resultsPage.classList.add("hidden");
-    collectionsPage.classList.add("hidden");
-    folderPage.classList.remove("hidden");
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
-}
-
-
-/* =========================================
-   NAVIGATION
-========================================= */
-
-collectionsButton.addEventListener(
-    "click",
-    () => {
-
-        scannerPage.classList.add("hidden");
-        resultsPage.classList.add("hidden");
-        folderPage.classList.add("hidden");
-        collectionsPage.classList.remove("hidden");
-
-        renderCollections();
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-    }
-);
-
-
-backToScannerButton.addEventListener(
-    "click",
-    () => {
-
-        collectionsPage.classList.add("hidden");
-        scannerPage.classList.remove("hidden");
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-    }
-);
-
-
-backToCollectionsButton.addEventListener(
-    "click",
-    () => {
-
-        folderPage.classList.add("hidden");
-        collectionsPage.classList.remove("hidden");
-
-        renderCollections();
-
-        window.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-    }
-);
-
-
-newFolderButton.addEventListener(
-    "click",
-    createFolder
-);
-
-
-scanAnotherButton.addEventListener(
-    "click",
-    analyzeAnotherCard
-);
-
-
-function analyzeAnotherCard() {
-
-    frontImageData = null;
-    backImageData = null;
-    currentCard = null;
-
-    frontInput.value = "";
-    backInput.value = "";
-
-    resetUploadBox(
-        frontUploadBox,
-        frontUploadContent
-    );
-
-    resetUploadBox(
-        backUploadBox,
-        backUploadContent
-    );
-
-    statusText.textContent = "";
-
-    resultsPage.classList.add("hidden");
-    scannerPage.classList.remove("hidden");
-
-    updateAnalyzeButton();
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
-}
-
-
-function resetUploadBox(
-    box,
-    content
-) {
-
-    const image =
-        box.querySelector(".previewImage");
-
-    const button =
-        box.querySelector(".removeImage");
-
-    if (image) {
-        image.remove();
-    }
-
-    if (button) {
-        button.remove();
-    }
-
-    content.classList.remove("hidden");
-}
-
-
-/* =========================================
-   SECURITY / HTML ESCAPING
-========================================= */
+let currentListings = [];
+let currentSummary = null;
+let activeFolder = null;
+let toastTimer = null;
 
 function escapeHtml(value) {
-
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
-
-function escapeAttribute(value) {
-
-    return escapeHtml(value);
+function safe(value) {
+  return value === null || value === undefined || value === ""
+    ? "Not identified"
+    : String(value);
 }
 
+function money(value, currency = "USD") {
+  const number = Number(value);
 
-/* =========================================
-   START
-========================================= */
+  if (!Number.isFinite(number)) {
+    return "Not available";
+  }
 
-showIntro();
-</script>
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency
+    }).format(number);
+  } catch {
+    return currency + " " + number.toFixed(2);
+  }
+}
 
-</body>
-</html>
+function toast(message) {
+  const element = $("toast");
+
+  element.textContent = message;
+  element.classList.add("show");
+
+  clearTimeout(toastTimer);
+
+  toastTimer = setTimeout(() => {
+    element.classList.remove("show");
+  }, 2400);
+}
+
+function showPage(id) {
+  pages.forEach((page) => {
+    $(page).classList.toggle("hidden", page !== id);
+  });
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+
+  if (id === "dashboardPage") renderDashboard();
+  if (id === "collectionsPage") renderCollections();
+  if (id === "showModePage") renderShowMode();
+}
+
+const wait = (milliseconds) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+async function intro() {
+  const text = $("introText");
+
+  text.classList.add("visible");
+  await wait(1000);
+
+  text.classList.replace("visible", "fadeOut");
+  await wait(500);
+
+  text.textContent = "Welcome to CardForge";
+  text.classList.remove("fadeOut");
+
+  await wait(30);
+
+  text.classList.add("visible");
+  await wait(1150);
+
+  text.classList.replace("visible", "fadeOut");
+  await wait(550);
+
+  $("introScreen").classList.add("hidden");
+  $("app").classList.remove("hidden");
+
+  showPage("scannerPage");
+}
+
+async function compress(file) {
+  if (!file.type.startsWith("image/")) {
+    throw Error("Choose an image file.");
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const image = new Image();
+
+      image.onload = () => {
+        let width = image.width;
+        let height = image.height;
+        const maximum = 1400;
+
+        if (width > maximum || height > maximum) {
+          const ratio = Math.min(
+            maximum / width,
+            maximum / height
+          );
+
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement("canvas");
+
+        canvas.width = width;
+        canvas.height = height;
+
+        canvas
+          .getContext("2d")
+          .drawImage(image, 0, 0, width, height);
+
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+
+      image.onerror = () => reject(Error("Could not read image."));
+      image.src = reader.result;
+    };
+
+    reader.onerror = () => reject(Error("Could not load image."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function preview(box, content, data, side) {
+  content.classList.add("hidden");
+
+  box.querySelector(".previewImage")?.remove();
+  box.querySelector(".removeImage")?.remove();
+
+  const image = document.createElement("img");
+
+  image.src = data;
+  image.className = "previewImage";
+  image.alt = side + " card preview";
+
+  box.appendChild(image);
+
+  const button = document.createElement("button");
+
+  button.className = "removeImage";
+  button.type = "button";
+  button.textContent = "×";
+  button.setAttribute("aria-label", "Remove " + side + " image");
+
+  button.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (side === "front") {
+      frontData = null;
+      $("frontInput").value = "";
+    } else {
+      backData = null;
+      $("backInput").value = "";
+    }
+
+    image.remove();
+    button.remove();
+
+    content.classList.remove("hidden");
+
+    $("analyzeButton").disabled = !frontData;
+  };
+
+  box.appendChild(button);
+}
+
+$("frontInput").onchange = async (event) => {
+  try {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    frontData = await compress(file);
+
+    preview(
+      $("frontBox"),
+      $("frontContent"),
+      frontData,
+      "front"
+    );
+
+    $("analyzeButton").disabled = false;
+  } catch (error) {
+    toast(error.message);
+  }
+};
+
+$("backInput").onchange = async (event) => {
+  try {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    backData = await compress(file);
+
+    preview(
+      $("backBox"),
+      $("backContent"),
+      backData,
+      "back"
+    );
+  } catch (error) {
+    toast(error.message);
+  }
+};
+
+$("analyzeButton").onclick = async () => {
+  if (!frontData) return;
+
+  $("analyzeButton").disabled = true;
+  $("statusText").textContent =
+    "Identifying card and checking listings…";
+  $("progress").classList.remove("hidden");
+
+  try {
+    const response = await fetch("/api/analyze-card", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        frontImage: frontData,
+        backImage: backData
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw Error(data.error || "Analysis failed.");
+    }
+
+    currentCard = data.card || {};
+    currentListings = data.ebayListings || [];
+    currentSummary = data.priceSummary || null;
+
+    renderResults(
+      currentCard,
+      currentListings,
+      currentSummary,
+      data.ebayError
+    );
+
+    showPage("resultsPage");
+  } catch (error) {
+    console.error(error);
+
+    $("statusText").textContent = error.message;
+    toast(error.message);
+  } finally {
+    $("analyzeButton").disabled = !frontData;
+    $("progress").classList.add("hidden");
+  }
+};
+
+function detail(label, value) {
+  return `
+    <div class="detail">
+      <div class="detailLabel">${escapeHtml(label)}</div>
+      <div class="detailValue">${escapeHtml(safe(value))}</div>
+    </div>
+  `;
+}
+
+function renderResults(card, listings, summary, ebayError) {
+  const name =
+    card.cardName ||
+    card.player ||
+    card.franchise ||
+    "Card identification uncertain";
+
+  const confidence = Number(card.confidence) || 0;
+
+  $("cardResult").innerHTML = `
+    <div class="resultHeader">
+      <div>
+        <h2 class="resultTitle">${escapeHtml(name)}</h2>
+
+        <div class="chipRow">
+          <span class="chip">${escapeHtml(
+            card.category || card.cardType || "Collectible card"
+          )}</span>
+
+          ${
+            card.year
+              ? `<span class="chip">${escapeHtml(card.year)}</span>`
+              : ""
+          }
+
+          ${
+            card.cardNumber
+              ? `<span class="chip">No. ${escapeHtml(
+                  card.cardNumber
+                )}</span>`
+              : ""
+          }
+        </div>
+      </div>
+
+      <span class="confidence ${
+        confidence >= 80 ? "high" : confidence < 55 ? "low" : ""
+      }">${confidence}% confidence</span>
+    </div>
+
+    <div class="detailsGrid">
+      ${detail("Category", card.category || card.cardType)}
+      ${detail(
+        "Sport / Franchise",
+        card.sport || card.franchise || card.team
+      )}
+      ${detail("Year", card.year)}
+      ${detail("Manufacturer", card.manufacturer)}
+      ${detail("Set / Series", card.set || card.series)}
+      ${detail("Player / Character", card.player || card.cardName)}
+      ${detail("Card Number", card.cardNumber)}
+      ${detail("Parallel", card.parallel)}
+      ${detail("Insert", card.insert)}
+      ${detail("Rarity", card.rarity)}
+      ${detail(
+        "Autograph",
+        card.autograph ? "Identified" : "Not confirmed"
+      )}
+      ${detail("Relic", card.relic ? "Identified" : "Not confirmed")}
+    </div>
+
+    ${
+      card.identificationNotes
+        ? `<p class="description">${escapeHtml(
+            card.identificationNotes
+          )}</p>`
+        : ""
+    }
+  `;
+
+  $("evidenceSection").innerHTML = `
+    <h2 class="sectionHeading">Identification Report</h2>
+
+    <p class="sectionNote">
+      Evidence and confidence are AI-assisted estimates. Verify details
+      against the printed card and official checklist when possible.
+    </p>
+
+    <div class="twoColumn">
+      <div class="resultPanel">
+        <h3>Visible evidence</h3>
+
+        ${
+          card.visibleEvidence?.length
+            ? `<ul class="evidenceList">
+                ${card.visibleEvidence
+                  .map(
+                    (item) => `<li>${escapeHtml(item)}</li>`
+                  )
+                  .join("")}
+              </ul>`
+            : `<p class="description">
+                No separate evidence notes returned. Try sharper front
+                and back photos.
+              </p>`
+        }
+      </div>
+
+      <div class="resultPanel">
+        <h3>Parallel Detective</h3>
+
+        ${
+          card.alternatives?.length
+            ? card.alternatives
+                .map(
+                  (alternative) => `
+                    <div class="alternative">
+                      <strong>${escapeHtml(
+                        alternative.candidate || "Possible alternative"
+                      )}</strong>
+
+                      <p>${escapeHtml(
+                        alternative.whyItCouldFit || ""
+                      )}</p>
+
+                      <p>
+                        <b>To confirm:</b>
+                        ${escapeHtml(
+                          alternative.whatWouldConfirmIt ||
+                            "Compare the set and card number."
+                        )}
+                      </p>
+                    </div>
+                  `
+                )
+                .join("")
+            : `<p class="description">
+                No strong alternate identification detected. A parallel
+                may still require a set checklist or serial-number check.
+              </p>`
+        }
+      </div>
+    </div>
+
+    <h2 class="sectionHeading">Condition Assistant</h2>
+
+    <p class="sectionNote">
+      Visual observations only. Images cannot establish authenticity
+      or predict an official grade.
+    </p>
+
+    <div class="resultPanel">
+      ${
+        card.conditionObservations?.length
+          ? card.conditionObservations
+              .map(
+                (observation) => `
+                  <div class="conditionItem">
+                    <strong>
+                      ${escapeHtml(observation.area || "Visible area")}
+                      <span class="certainty">
+                        · ${escapeHtml(
+                          observation.certainty || "uncertain"
+                        )} certainty
+                      </span>
+                    </strong>
+
+                    <p>${escapeHtml(
+                      observation.observation ||
+                        "No observation provided."
+                    )}</p>
+                  </div>
+                `
+              )
+              .join("")
+          : `<p class="description">
+              Not enough detail for useful condition observations.
+              Retake photos in even light with corners and edges in focus.
+            </p>`
+      }
+
+      ${
+        card.conditionLimitations
+          ? `<p class="description">${escapeHtml(
+              card.conditionLimitations
+            )}</p>`
+          : ""
+      }
+    </div>
+  `;
+
+  renderPrice(summary, listings, ebayError);
+  renderListings();
+}
+
+function renderPrice(summary, listings, error) {
+  const prices = listings
+    .map((item) => Number(item.price))
+    .filter((price) => Number.isFinite(price) && price > 0)
+    .sort((a, b) => a - b);
+
+  let low = summary?.low;
+  let median = summary?.median;
+  let high = summary?.high;
+  let count = summary?.pricedListingCount;
+
+  if (low == null && prices.length) {
+    low = prices[0];
+    high = prices[prices.length - 1];
+
+    median =
+      prices.length % 2
+        ? prices[Math.floor(prices.length / 2)]
+        : (prices[prices.length / 2 - 1] +
+            prices[prices.length / 2]) /
+          2;
+
+    count = prices.length;
+  }
+
+  $("priceSection").innerHTML = `
+    <h2 class="sectionHeading">Price Breakdown</h2>
+
+    <p class="sectionNote">
+      A snapshot of matched active asking prices, not sold comps
+      or an appraisal.
+    </p>
+
+    <div class="priceMetrics">
+      <div class="metricCard">
+        <div class="metricLabel">Lowest ask</div>
+        <div class="metricValue">
+          ${
+            low == null
+              ? "Not available"
+              : escapeHtml(money(low))
+          }
+        </div>
+        <div class="metricCaption">Among accepted matches</div>
+      </div>
+
+      <div class="metricCard">
+        <div class="metricLabel">Median ask</div>
+        <div class="metricValue">
+          ${
+            median == null
+              ? "Not available"
+              : escapeHtml(money(median))
+          }
+        </div>
+        <div class="metricCaption">
+          ${Number(count) || 0} priced listings
+        </div>
+      </div>
+
+      <div class="metricCard">
+        <div class="metricLabel">Highest ask</div>
+        <div class="metricValue">
+          ${
+            high == null
+              ? "Not available"
+              : escapeHtml(money(high))
+          }
+        </div>
+        <div class="metricCaption">
+          ${listings.length} accepted matches
+        </div>
+      </div>
+    </div>
+
+    <p class="sectionNote">
+      ${escapeHtml(summary?.basis || "Active asking prices only.")}
+      ${error ? escapeHtml(error) : ""}
+    </p>
+  `;
+}
+
+function renderListings() {
+  const grid = $("listingGrid");
+  const strongOnly = $("strongOnly").checked;
+  const sort = $("listingSort").value;
+
+  let listings = currentListings.filter(
+    (item) => !strongOnly || Number(item.matchScore) >= 65
+  );
+
+  if (sort === "low") {
+    listings.sort(
+      (a, b) =>
+        (Number(a.price) || Infinity) -
+        (Number(b.price) || Infinity)
+    );
+  } else if (sort === "high") {
+    listings.sort(
+      (a, b) =>
+        (Number(b.price) || 0) -
+        (Number(a.price) || 0)
+    );
+  } else {
+    listings.sort(
+      (a, b) =>
+        (Number(b.matchScore) || 0) -
+        (Number(a.matchScore) || 0)
+    );
+  }
+
+  grid.innerHTML = "";
+
+  if (!listings.length) {
+    grid.innerHTML = `
+      <div class="noListings">
+        ${
+          currentListings.length
+            ? "No results meet the current filter. Turn off stronger matches only to review more candidates."
+            : "No suitable active listings were found. That does not prove the card has no market."
+        }
+      </div>
+    `;
+
+    return;
+  }
+
+  listings.forEach((item) => {
+    const element = document.createElement("article");
+
+    element.className = "listing";
+
+    element.innerHTML = `
+      ${
+        item.image
+          ? `<div class="listingImageContainer">
+              <img
+                class="listingImage"
+                src="${escapeHtml(item.image)}"
+                alt=""
+                loading="lazy"
+              >
+            </div>`
+          : `<div class="listingImageContainer"></div>`
+      }
+
+      <div class="listingInfo">
+        <div class="listingTitle">
+          ${escapeHtml(item.title || "eBay listing")}
+        </div>
+
+        <div class="listingPrice">
+          ${escapeHtml(
+            item.priceDisplay ||
+              money(item.price, item.currency || "USD")
+          )}
+        </div>
+
+        <div class="listingCondition">
+          ${escapeHtml(item.condition || "Condition not specified")}
+        </div>
+
+        <span class="matchBadge">
+          ${Number(item.matchScore) || 0}/100 title match
+        </span>
+
+        <div class="matchReasons">
+          ${escapeHtml(
+            (item.matchReasons || []).slice(0, 4).join(" · ")
+          )}
+        </div>
+
+        ${
+          item.url
+            ? `<a
+                class="listingLink"
+                href="${escapeHtml(item.url)}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >View on eBay</a>`
+            : ""
+        }
+      </div>
+    `;
+
+    grid.appendChild(element);
+  });
+}
+
+$("strongOnly").onchange = renderListings;
+$("listingSort").onchange = renderListings;
+
+/* Collections */
+
+function collections() {
+  try {
+    const data = JSON.parse(
+      localStorage.getItem(COLLECTIONS_KEY) || "{}"
+    );
+
+    return data &&
+      typeof data === "object" &&
+      !Array.isArray(data)
+      ? data
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveCollections(data) {
+  localStorage.setItem(
+    COLLECTIONS_KEY,
+    JSON.stringify(data)
+  );
+}
+
+function allCards() {
+  const output = [];
+
+  for (const [folder, cards] of Object.entries(collections())) {
+    if (Array.isArray(cards)) {
+      cards.forEach((card, index) => {
+        output.push({
+          ...card,
+          _folder: folder,
+          _index: index
+        });
+      });
+    }
+  }
+
+  return output;
+}
+
+function saveCurrent() {
+  if (!currentCard) {
+    return toast("Scan a card first.");
+  }
+
+  const data = collections();
+  let folder;
+
+  const names = Object.keys(data);
+
+  if (!names.length) {
+    folder = prompt("Create your first collection:")?.trim();
+
+    if (!folder) return;
+
+    data[folder] = [];
+  } else {
+    folder = prompt(
+      "Collection name:\n\n" + names.join("\n")
+    )?.trim();
+
+    if (!folder) return;
+
+    if (!Object.hasOwn(data, folder)) {
+      return toast("Collection not found. Create it first.");
+    }
+  }
+
+  if (!Array.isArray(data[folder])) {
+    data[folder] = [];
+  }
+
+  const key = (card) =>
+    [
+      card.cardName,
+      card.player,
+      card.cardNumber,
+      card.set
+    ]
+      .map((value) => String(value || "").toLowerCase())
+      .join("|");
+
+  if (
+    data[folder].some(
+      (card) => key(card) === key(currentCard)
+    ) &&
+    !confirm("A similar card is already saved here. Add another copy?")
+  ) {
+    return;
+  }
+
+  data[folder].push({
+    ...currentCard,
+    image: frontData,
+    backImage: backData,
+    savedAt: new Date().toISOString(),
+    askingPriceSummary: currentSummary
+  });
+
+  saveCollections(data);
+
+  toast("Saved to " + folder);
+}
+
+function createFolder() {
+  const name = prompt("Name your collection:")?.trim();
+
+  if (!name) return;
+
+  const data = collections();
+
+  if (Object.hasOwn(data, name)) {
+    return toast("That collection already exists.");
+  }
+
+  data[name] = [];
+
+  saveCollections(data);
+  renderCollections();
+
+  toast("Collection created.");
+}
+
+function renderCollections() {
+  const grid = $("collectionGrid");
+  const data = collections();
+
+  grid.innerHTML = "";
+
+  const names = Object.keys(data);
+
+  if (!names.length) {
+    grid.innerHTML = `
+      <div class="emptyState">
+        No collections yet. Create a folder to start.
+      </div>
+    `;
+
+    return;
+  }
+
+  names.forEach((name) => {
+    const element = document.createElement("div");
+
+    element.className = "folderCard";
+
+    element.innerHTML = `
+      <div class="folderName">${escapeHtml(name)}</div>
+      <div class="folderCount">
+        ${(data[name] || []).length} cards
+      </div>
+
+      <div class="cardActions">
+        <button class="folderButton open">Open</button>
+        <button class="folderButton rename">Rename</button>
+        <button class="folderButton delete">Delete</button>
+      </div>
+    `;
+
+    element.querySelector(".open").onclick = () =>
+      openFolder(name);
+
+    element.querySelector(".rename").onclick = () =>
+      renameFolder(name);
+
+    element.querySelector(".delete").onclick = () =>
+      deleteFolder(name);
+
+    grid.appendChild(element);
+  });
+}
+
+function renameFolder(oldName) {
+  const name = prompt("New collection name:", oldName)?.trim();
+
+  if (!name || name === oldName) return;
+
+  const data = collections();
+
+  if (Object.hasOwn(data, name)) {
+    return toast("That name is already used.");
+  }
+
+  data[name] = data[oldName];
+
+  delete data[oldName];
+
+  saveCollections(data);
+  renderCollections();
+}
+
+function deleteFolder(name) {
+  if (!confirm(`Delete ${name} and all cards inside?`)) {
+    return;
+  }
+
+  const data = collections();
+
+  delete data[name];
+
+  saveCollections(data);
+  renderCollections();
+}
+
+function openFolder(name) {
+  activeFolder = name;
+
+  const cards = collections()[name] || [];
+
+  $("folderTitle").textContent = name;
+  $("folderSubtitle").textContent = `${cards.length} cards`;
+  $("folderCards").innerHTML = "";
+
+  if (!cards.length) {
+    $("folderCards").innerHTML = `
+      <div class="emptyState">This collection is empty.</div>
+    `;
+  }
+
+  cards.forEach((card, index) => {
+    const element = document.createElement("article");
+
+    element.className = "collectionCard";
+
+    element.innerHTML = `
+      ${
+        card.image
+          ? `<img
+              class="collectionCardImage"
+              src="${escapeHtml(card.image)}"
+              alt=""
+              loading="lazy"
+            >`
+          : ""
+      }
+
+      <div class="collectionCardTitle">
+        ${escapeHtml(
+          card.cardName || card.player || card.franchise || "Card"
+        )}
+      </div>
+
+      <div class="cardMeta">
+        ${escapeHtml(
+          [
+            card.year,
+            card.manufacturer,
+            card.set,
+            card.cardNumber
+          ]
+            .filter(Boolean)
+            .join(" · ")
+        )}
+      </div>
+
+      <div class="cardMeta">
+        Identification confidence: ${Number(card.confidence) || 0}%
+      </div>
+
+      <div class="cardActions">
+        <button class="secondaryButton details">Details</button>
+        <button class="secondaryButton move">Move</button>
+        <button class="secondaryButton remove">Remove</button>
+      </div>
+    `;
+
+    element.querySelector(".details").onclick = () => {
+      currentCard = card;
+      frontData = card.image || null;
+      currentListings = [];
+      currentSummary = card.askingPriceSummary || null;
+
+      renderResults(
+        card,
+        [],
+        currentSummary,
+        "Rescan this card to refresh marketplace listings."
+      );
+
+      showPage("resultsPage");
+    };
+
+    element.querySelector(".move").onclick = () =>
+      moveCard(name, index);
+
+    element.querySelector(".remove").onclick = () => {
+      if (!confirm("Remove this card?")) return;
+
+      const data = collections();
+
+      data[name].splice(index, 1);
+
+      saveCollections(data);
+      openFolder(name);
+    };
+
+    $("folderCards").appendChild(element);
+  });
+
+  showPage("folderPage");
+}
+
+function moveCard(from, index) {
+  const data = collections();
+
+  const names = Object.keys(data).filter(
+    (name) => name !== from
+  );
+
+  if (!names.length) {
+    return toast("Create another folder first.");
+  }
+
+  const to = prompt(
+    "Move card to:\n\n" + names.join("\n")
+  )?.trim();
+
+  if (!to) return;
+
+  if (!names.includes(to)) {
+    return toast("Folder not found.");
+  }
+
+  data[to].push(data[from].splice(index, 1)[0]);
+
+  saveCollections(data);
+  openFolder(from);
+
+  toast("Card moved.");
+}
+
+/* Exports */
+
+function download(name, content, type) {
+  const url = URL.createObjectURL(
+    new Blob([content], { type })
+  );
+
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = name;
+
+  document.body.appendChild(link);
+
+  link.click();
+  link.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const fileSafe = (value) =>
+  String(value || "cardforge")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60) || "cardforge";
+
+function exportCurrent() {
+  if (!currentCard) return;
+
+  download(
+    fileSafe(currentCard.cardName || currentCard.player) + ".json",
+    JSON.stringify(
+      {
+        card: currentCard,
+        priceSummary: currentSummary,
+        activeListings: currentListings,
+        exportedAt: new Date().toISOString()
+      },
+      null,
+      2
+    ),
+    "application/json"
+  );
+}
+
+function renderDashboard() {
+  const cards = allCards();
+
+  const priced = cards
+    .map((card) => Number(card.askingPriceSummary?.median))
+    .filter((number) => number > 0 && Number.isFinite(number));
+
+  const total = priced.reduce((a, b) => a + b, 0);
+
+  const categories = new Set(
+    cards
+      .map((card) => card.category || card.cardType)
+      .filter(Boolean)
+  ).size;
+
+  $("dashboardMetrics").innerHTML = `
+    <div class="metricCard">
+      <div class="metricLabel">Saved cards</div>
+      <div class="metricValue">${cards.length}</div>
+    </div>
+
+    <div class="metricCard">
+      <div class="metricLabel">Collections</div>
+      <div class="metricValue">${Object.keys(collections()).length}</div>
+    </div>
+
+    <div class="metricCard">
+      <div class="metricLabel">Categories</div>
+      <div class="metricValue">${categories}</div>
+    </div>
+
+    <div class="metricCard">
+      <div class="metricLabel">Saved median asks total</div>
+      <div class="metricValue">${money(total)}</div>
+    </div>
+  `;
+
+  const recent = cards
+    .sort((a, b) =>
+      String(b.savedAt || "").localeCompare(String(a.savedAt || ""))
+    )
+    .slice(0, 6);
+
+  $("recentCards").innerHTML = recent.length
+    ? recent
+        .map(
+          (card) => `
+            <div class="conditionItem">
+              <strong>${escapeHtml(
+                card.cardName || card.player || "Card"
+              )}</strong>
+
+              <p>
+                ${escapeHtml(
+                  [
+                    card._folder,
+                    card.year,
+                    card.set,
+                    card.cardNumber
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")
+                )}
+              </p>
+            </div>
+          `
+        )
+        .join("")
+    : `<div class="emptyState">Saved cards will appear here.</div>`;
+}
+
+function exportJson() {
+  download(
+    "cardforge-collection.json",
+    JSON.stringify(
+      {
+        exportedAt: new Date().toISOString(),
+        collections: collections()
+      },
+      null,
+      2
+    ),
+    "application/json"
+  );
+}
+
+function exportCsv() {
+  const columns = [
+    "_folder",
+    "cardName",
+    "player",
+    "franchise",
+    "category",
+    "year",
+    "manufacturer",
+    "set",
+    "cardNumber",
+    "parallel",
+    "rarity",
+    "confidence",
+    "savedAt"
+  ];
+
+  const rows = allCards();
+
+  const cell = (value) =>
+    `"${String(value ?? "").replace(/"/g, '""')}"`;
+
+  const csv = [
+    columns.join(","),
+    ...rows.map((row) =>
+      columns.map((column) => cell(row[column])).join(",")
+    )
+  ].join("\r\n");
+
+  download(
+    "cardforge-collection.csv",
+    csv,
+    "text/csv;charset=utf-8"
+  );
+}
+
+/* Card Show Mode */
+
+function showSession() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(SHOW_KEY) || "null"
+    );
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(session) {
+  localStorage.setItem(
