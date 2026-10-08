@@ -1,852 +1,993 @@
 const express = require("express");
 const cors = require("cors");
+const crypto = require("crypto");
 const dotenv = require("dotenv");
 const OpenAI = require("openai");
-const crypto = require("crypto");
 
 dotenv.config();
 
 const app = express();
+app.use(cors());
+app.use(express.json({ limit: "15mb" }));
+app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-
-app.use(
-    express.json({
-        limit: "20mb"
-    })
-);
-
-app.use(express.static(__dirname));
-
-/* =========================================================
-   OPENAI
-========================================================= */
-
-if (!process.env.OPENAI_API_KEY) {
-    console.error("ERROR: OPENAI_API_KEY is missing.");
-}
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
-
-const OPENAI_MODEL =
-    process.env.OPENAI_MODEL || "gpt-4.1-mini";
-
-/* =========================================================
-   EBAY
-========================================================= */
-
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const EBAY_APP_ID = process.env.EBAY_APP_ID;
 const EBAY_CERT_ID = process.env.EBAY_CERT_ID;
-
-const EBAY_VERIFICATION_TOKEN =
-    process.env.EBAY_VERIFICATION_TOKEN;
-
-const EBAY_NOTIFICATION_ENDPOINT =
-    process.env.EBAY_NOTIFICATION_ENDPOINT;
+const EBAY_VERIFICATION_TOKEN = process.env.EBAY_VERIFICATION_TOKEN;
 
 const EBAY_ENDPOINT =
     "https://cardforge-0s37.onrender.com/api/ebay/account-deletion";
 
-let ebayToken = null;
+const openai = new OpenAI({
+    apiKey: OPENAI_API_KEY
+});
+
+let ebayAccessToken = null;
 let ebayTokenExpiresAt = 0;
 
-/* =========================================================
-   HEALTH CHECK
-========================================================= */
+console.log("");
+console.log("======================================");
+console.log("          CARDFORGE V12 BACKEND");
+console.log("======================================");
+console.log(`Server running on port ${PORT}`);
+console.log(`AI model: gpt-4.1-mini`);
+console.log(`eBay configured: ${!!(EBAY_APP_ID && EBAY_CERT_ID)}`);
+console.log(
+    `eBay verification configured: ${!!EBAY_VERIFICATION_TOKEN}`
+);
+console.log(`eBay endpoint: ${EBAY_ENDPOINT}`);
+console.log("======================================");
+console.log("");
+
+
+// ============================================================
+// HEALTH CHECK
+// ============================================================
 
 app.get("/api/health", (req, res) => {
     res.json({
-        success: true,
-        message: "CardForge backend is running.",
-        version: "V9",
-        ai: !!process.env.OPENAI_API_KEY,
-        ebay: !!(EBAY_APP_ID && EBAY_CERT_ID),
-        ebayNotificationEndpoint:
-            EBAY_ENDPOINT
+        ok: true,
+        version: "V12",
+        ebayConfigured: !!(EBAY_APP_ID && EBAY_CERT_ID)
     });
 });
 
-/* =========================================================
-   EBAY ACCOUNT DELETION VERIFICATION
-========================================================= */
 
-app.get(
-    "/api/ebay/account-deletion",
-    (req, res) => {
+// ============================================================
+// EBAY ACCOUNT DELETION / ENDPOINT VERIFICATION
+// ============================================================
 
-        const challengeCode =
-            req.query.challenge_code;
+app.get("/api/ebay/account-deletion", (req, res) => {
+    const challengeCode = req.query.challenge_code;
 
-        console.log(
-            "eBay endpoint verification challenge received."
-        );
-
-        if (!challengeCode) {
-            return res.status(400).json({
-                error:
-                    "Missing challenge_code."
-            });
-        }
-
-        if (!EBAY_VERIFICATION_TOKEN) {
-            console.error(
-                "ERROR: EBAY_VERIFICATION_TOKEN is missing."
-            );
-
-            return res.status(500).json({
-                error:
-                    "Verification token is not configured."
-            });
-        }
-
-        try {
-
-            /*
-             * eBay requires:
-             *
-             * SHA256(
-             *   challengeCode +
-             *   verificationToken +
-             *   endpoint
-             * )
-             */
-
-            const hash =
-                crypto.createHash("sha256");
-
-            hash.update(
-                challengeCode
-            );
-
-            hash.update(
-                EBAY_VERIFICATION_TOKEN
-            );
-
-            /*
-             * IMPORTANT:
-             * This MUST exactly match the
-             * Notification Endpoint entered
-             * in the eBay Developer Portal.
-             */
-
-            hash.update(
-                EBAY_ENDPOINT
-            );
-
-            const challengeResponse =
-                hash.digest("hex");
-
-            console.log(
-                "eBay challenge response generated successfully."
-            );
-
-            return res.status(200).json({
-                challengeResponse
-            });
-
-        } catch (error) {
-
-            console.error(
-                "eBay challenge response error:"
-            );
-
-            console.error(
-                error
-            );
-
-            return res.status(500).json({
-                error:
-                    "Unable to generate challenge response."
-            });
-        }
+    if (!challengeCode) {
+        return res.status(200).send("CardForge eBay endpoint active.");
     }
-);
 
-/* =========================================================
-   EBAY ACCOUNT DELETION NOTIFICATIONS
-========================================================= */
+    if (!EBAY_VERIFICATION_TOKEN) {
+        return res.status(500).send("Verification token not configured.");
+    }
 
-app.post(
-    "/api/ebay/account-deletion",
-    (req, res) => {
+    try {
+        const hash = crypto.createHash("sha256");
 
-        console.log(
-            "eBay marketplace account deletion notification received."
-        );
+        hash.update(challengeCode);
+        hash.update(EBAY_VERIFICATION_TOKEN);
+        hash.update(EBAY_ENDPOINT);
 
-        console.log(
-            JSON.stringify(
-                req.body,
-                null,
-                2
-            )
-        );
+        const challengeResponse = hash.digest("hex");
 
-        /*
-         * eBay requires the endpoint to immediately
-         * acknowledge the notification.
-         */
+        console.log("eBay endpoint verification challenge received.");
 
-        return res.status(200).json({
-            success: true
+        res.status(200).json({
+            challengeResponse
         });
-    }
-);
+    } catch (error) {
+        console.error("eBay verification error:", error);
 
-/* =========================================================
-   EBAY APPLICATION ACCESS TOKEN
-========================================================= */
+        res.status(500).send("Verification failed.");
+    }
+});
+
+
+app.post("/api/ebay/account-deletion", (req, res) => {
+    console.log("eBay account deletion notification received.");
+
+    res.status(200).send("OK");
+});
+
+
+// ============================================================
+// EBAY OAUTH
+// ============================================================
 
 async function getEbayAccessToken() {
+    if (
+        ebayAccessToken &&
+        Date.now() < ebayTokenExpiresAt - 60 * 1000
+    ) {
+        return ebayAccessToken;
+    }
 
     if (!EBAY_APP_ID || !EBAY_CERT_ID) {
-
-        throw new Error(
-            "eBay credentials are missing. Add EBAY_APP_ID and EBAY_CERT_ID to Render."
-        );
+        throw new Error("eBay credentials are not configured.");
     }
 
-    /*
-     * Reuse the existing token if it is still valid.
-     */
+    console.log("Getting new eBay application access token...");
 
-    if (
-        ebayToken &&
-        Date.now() <
-            ebayTokenExpiresAt - 60000
-    ) {
-        return ebayToken;
-    }
+    const credentials = Buffer.from(
+        `${EBAY_APP_ID}:${EBAY_CERT_ID}`
+    ).toString("base64");
 
-    console.log(
-        "Getting new eBay application access token..."
+    const response = await fetch(
+        "https://api.ebay.com/identity/v1/oauth2/token",
+        {
+            method: "POST",
+            headers: {
+                Authorization: `Basic ${credentials}`,
+                "Content-Type":
+                    "application/x-www-form-urlencoded"
+            },
+            body:
+                "grant_type=client_credentials" +
+                "&scope=" +
+                encodeURIComponent(
+                    "https://api.ebay.com/oauth/api_scope"
+                )
+        }
     );
 
-    const credentials =
-        Buffer
-            .from(
-                `${EBAY_APP_ID}:${EBAY_CERT_ID}`
-            )
-            .toString("base64");
-
-    const response =
-        await fetch(
-            "https://api.ebay.com/identity/v1/oauth2/token",
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/x-www-form-urlencoded",
-
-                    "Authorization":
-                        `Basic ${credentials}`
-                },
-
-                body:
-                    "grant_type=client_credentials" +
-                    "&scope=" +
-                    encodeURIComponent(
-                        "https://api.ebay.com/oauth/api_scope"
-                    )
-            }
-        );
-
-    const data =
-        await response.json();
+    const data = await response.json();
 
     if (!response.ok) {
-
-        console.error(
-            "eBay OAuth error:",
-            data
-        );
-
+        console.error("eBay OAuth error:", data);
         throw new Error(
             data.error_description ||
-            data.error ||
-            "Unable to authenticate with eBay."
+            "eBay authentication failed."
         );
     }
 
-    ebayToken =
-        data.access_token;
+    ebayAccessToken = data.access_token;
 
     ebayTokenExpiresAt =
         Date.now() +
-        data.expires_in * 1000;
+        (Number(data.expires_in) || 7200) * 1000;
 
-    console.log(
-        "eBay access token obtained successfully."
-    );
+    console.log("eBay access token obtained successfully.");
 
-    return ebayToken;
+    return ebayAccessToken;
 }
 
-/* =========================================================
-   EBAY ACTIVE LISTING SEARCH
-========================================================= */
 
-async function searchEbayListings(
-    searchQuery
-) {
+// ============================================================
+// EBAY SEARCH
+// ============================================================
 
-    const token =
-        await getEbayAccessToken();
+async function searchEbaySingle(query, limit = 30) {
+    const token = await getEbayAccessToken();
 
-    const params =
-        new URLSearchParams();
-
-    params.set(
-        "q",
-        searchQuery
-    );
-
-    params.set(
-        "limit",
-        "12"
-    );
-
-    params.set(
-        "sort",
-        "price"
-    );
+    console.log(`eBay search: ${query}`);
 
     const url =
-        "https://api.ebay.com/buy/browse/v1/item_summary/search?" +
-        params.toString();
+        "https://api.ebay.com/buy/browse/v1/item_summary/search" +
+        `?q=${encodeURIComponent(query)}` +
+        `&limit=${limit}` +
+        "&autocorrect=true";
+
+    const response = await fetch(url, {
+        method: "GET",
+        headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "X-EBAY-C-MARKETPLACE-ID": "EBAY_US"
+        }
+    });
+
+    const text = await response.text();
+
+    let data;
+
+    try {
+        data = JSON.parse(text);
+    } catch {
+        data = {
+            raw: text
+        };
+    }
 
     console.log(
-        "Searching eBay for:",
-        searchQuery
+        `eBay response status: ${response.status}`
     );
 
-    const response =
-        await fetch(
-            url,
-            {
-                method: "GET",
-
-                headers: {
-                    "Authorization":
-                        `Bearer ${token}`,
-
-                    "Accept":
-                        "application/json",
-
-                    "X-EBAY-C-MARKETPLACE-ID":
-                        "EBAY_US"
-                }
-            }
-        );
-
-    const data =
-        await response.json();
-
     if (!response.ok) {
-
-        console.error(
-            "eBay Browse API error:",
-            data
-        );
+        console.error("eBay search error:", data);
 
         throw new Error(
-            data.errors?.[0]?.longMessage ||
-            data.errors?.[0]?.message ||
-            "eBay listing search failed."
+            `eBay search failed with status ${response.status}`
         );
     }
 
-    const listings =
-        (data.itemSummaries || [])
-            .map(item => {
+    const count =
+        Array.isArray(data.itemSummaries)
+            ? data.itemSummaries.length
+            : 0;
 
-                const price =
-                    item.price?.value
-                        ? Number(
-                            item.price.value
-                        )
-                        : null;
+    console.log(
+        `eBay results for "${query}": ${count}`
+    );
 
-                return {
+    return data.itemSummaries || [];
+}
 
-                    itemId:
-                        item.itemId ||
-                        "",
 
-                    title:
-                        item.title ||
-                        "Unknown listing",
+// ============================================================
+// NORMALIZE TEXT
+// ============================================================
 
-                    price,
+function normalizeText(value) {
+    return String(value || "")
+        .toLowerCase()
+        .replace(/&/g, " and ")
+        .replace(/[^a-z0-9]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
 
-                    currency:
-                        item.price?.currency ||
-                        "USD",
 
-                    image:
-                        item.image?.imageUrl ||
-                        "",
+// ============================================================
+// TOKENIZE
+// ============================================================
 
-                    itemWebUrl:
-                        item.itemWebUrl ||
-                        "",
+function tokenize(value) {
+    return normalizeText(value)
+        .split(" ")
+        .filter(Boolean);
+}
 
-                    condition:
-                        item.condition ||
-                        "Unknown",
 
-                    seller:
-                        item.seller?.username ||
-                        "",
+// ============================================================
+// REMOVE GENERIC WORDS
+// ============================================================
 
-                    buyingOptions:
-                        item.buyingOptions ||
-                        []
-                };
-            });
+const STOP_WORDS = new Set([
+    "the",
+    "a",
+    "an",
+    "card",
+    "cards",
+    "trading",
+    "tcg",
+    "collectible",
+    "collectibles",
+    "base",
+    "rc",
+    "rookie",
+    "mint",
+    "gem",
+    "rare",
+    "new",
+    "hot",
+    "🔥"
+]);
+
+function usefulTokens(value) {
+    return tokenize(value).filter(
+        token =>
+            token.length > 1 &&
+            !STOP_WORDS.has(token)
+    );
+}
+
+
+// ============================================================
+// BUILD SEARCH QUERIES
+// ============================================================
+
+function buildEbayQueries(card) {
+    const queries = [];
+
+    const year = card.year || "";
+    const manufacturer = card.manufacturer || "";
+    const setName = card.set || "";
+    const cardName = card.cardName || "";
+    const cardNumber = card.cardNumber || "";
+    const player = card.player || "";
+    const team = card.team || "";
+    const parallel = card.parallel || "";
+    const insert = card.insert || "";
+    const franchise = card.franchise || "";
+    const series = card.series || "";
+
+    function add(parts) {
+        const clean = parts
+            .filter(Boolean)
+            .join(" ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+        if (!clean) return;
+
+        const normalized = normalizeText(clean);
+
+        if (!queries.some(q => normalizeText(q) === normalized)) {
+            queries.push(clean);
+        }
+    }
+
+    // Strongest exact identifiers first
+    add([cardName, cardNumber]);
+    add([player, cardNumber]);
+    add([cardName, setName, cardNumber]);
+
+    // Insert / parallel specific
+    add([player, insert, cardNumber]);
+    add([player, parallel, cardNumber]);
+    add([cardName, insert, parallel]);
+
+    // Set / manufacturer
+    add([manufacturer, setName, cardName]);
+    add([year, manufacturer, setName, cardName]);
+
+    // Sports fallback
+    add([player, team, setName]);
+    add([player, setName]);
+
+    // Non-sports fallback
+    add([franchise, cardName, cardNumber]);
+    add([series, cardName, cardNumber]);
+    add([setName, cardNumber]);
+
+    // Final identity searches
+    add([player, cardName]);
+    add([franchise, cardName]);
+    add([setName, cardName]);
+
+    return queries.slice(0, 8);
+}
+
+
+// ============================================================
+// LISTING TEXT
+// ============================================================
+
+function getListingText(item) {
+    return normalizeText(
+        [
+            item.title,
+            item.shortDescription,
+            item.subtitle,
+            item.condition
+        ]
+            .filter(Boolean)
+            .join(" ")
+    );
+}
+
+
+// ============================================================
+// CHECK WHETHER A PHRASE EXISTS
+// ============================================================
+
+function containsPhrase(text, value) {
+    const normalized = normalizeText(value);
+
+    if (!normalized) {
+        return false;
+    }
+
+    return text.includes(normalized);
+}
+
+
+// ============================================================
+// SCORE EBAY LISTING
+// ============================================================
+
+function scoreEbayListing(item, card) {
+    const titleText = normalizeText(item.title);
+    const listingText = getListingText(item);
+
+    let score = 0;
+
+    const reasons = [];
+
+    const player = normalizeText(card.player);
+    const cardName = normalizeText(card.cardName);
+    const setName = normalizeText(card.set);
+    const manufacturer = normalizeText(card.manufacturer);
+    const cardNumber = normalizeText(card.cardNumber);
+    const year = normalizeText(card.year);
+    const team = normalizeText(card.team);
+    const parallel = normalizeText(card.parallel);
+    const insert = normalizeText(card.insert);
+    const franchise = normalizeText(card.franchise);
+    const series = normalizeText(card.series);
+
+    // --------------------------------------------------------
+    // PLAYER
+    // --------------------------------------------------------
+
+    if (player) {
+        if (containsPhrase(titleText, player)) {
+            score += 35;
+            reasons.push("player");
+        } else {
+            // A known player is critical.
+            score -= 35;
+            reasons.push("missing player");
+        }
+    }
+
+    // --------------------------------------------------------
+    // CARD NUMBER
+    // --------------------------------------------------------
+
+    if (cardNumber) {
+        const numberClean = cardNumber
+            .replace(/[^a-z0-9]/gi, "")
+            .toLowerCase();
+
+        const titleCompact = titleText
+            .replace(/[^a-z0-9]/g, "");
+
+        if (
+            titleCompact.includes(numberClean)
+        ) {
+            score += 30;
+            reasons.push("card number");
+        }
+    }
+
+    // --------------------------------------------------------
+    // CARD NAME
+    // --------------------------------------------------------
+
+    if (cardName) {
+        const cardTokens = usefulTokens(cardName);
+
+        let matches = 0;
+
+        for (const token of cardTokens) {
+            if (titleText.includes(token)) {
+                matches++;
+            }
+        }
+
+        if (cardTokens.length > 0) {
+            const ratio =
+                matches / cardTokens.length;
+
+            if (ratio >= 0.8) {
+                score += 25;
+                reasons.push("card name");
+            } else if (ratio >= 0.5) {
+                score += 10;
+                reasons.push("partial card name");
+            } else if (cardTokens.length >= 2) {
+                score -= 20;
+                reasons.push("weak card name");
+            }
+        }
+    }
+
+    // --------------------------------------------------------
+    // SET
+    // --------------------------------------------------------
+
+    if (setName) {
+        const setTokens = usefulTokens(setName);
+
+        let matches = 0;
+
+        for (const token of setTokens) {
+            if (titleText.includes(token)) {
+                matches++;
+            }
+        }
+
+        if (setTokens.length > 0) {
+            const ratio =
+                matches / setTokens.length;
+
+            if (ratio >= 0.75) {
+                score += 20;
+                reasons.push("set");
+            } else if (ratio >= 0.5) {
+                score += 8;
+                reasons.push("partial set");
+            }
+        }
+    }
+
+    // --------------------------------------------------------
+    // MANUFACTURER
+    // --------------------------------------------------------
+
+    if (manufacturer) {
+        if (containsPhrase(titleText, manufacturer)) {
+            score += 10;
+            reasons.push("manufacturer");
+        }
+    }
+
+    // --------------------------------------------------------
+    // YEAR
+    // --------------------------------------------------------
+
+    if (year) {
+        if (titleText.includes(year)) {
+            score += 10;
+            reasons.push("year");
+        }
+    }
+
+    // --------------------------------------------------------
+    // TEAM
+    // --------------------------------------------------------
+
+    if (team) {
+        if (containsPhrase(titleText, team)) {
+            score += 8;
+            reasons.push("team");
+        }
+    }
+
+    // --------------------------------------------------------
+    // INSERT
+    // --------------------------------------------------------
+
+    if (insert) {
+        if (containsPhrase(titleText, insert)) {
+            score += 20;
+            reasons.push("insert");
+        }
+    }
+
+    // --------------------------------------------------------
+    // PARALLEL
+    // --------------------------------------------------------
+
+    if (parallel) {
+        if (containsPhrase(titleText, parallel)) {
+            score += 20;
+            reasons.push("parallel");
+        }
+    }
+
+    // --------------------------------------------------------
+    // FRANCHISE
+    // --------------------------------------------------------
+
+    if (franchise) {
+        if (containsPhrase(titleText, franchise)) {
+            score += 15;
+            reasons.push("franchise");
+        }
+    }
+
+    // --------------------------------------------------------
+    // SERIES
+    // --------------------------------------------------------
+
+    if (series) {
+        if (containsPhrase(titleText, series)) {
+            score += 12;
+            reasons.push("series");
+        }
+    }
+
+    // --------------------------------------------------------
+    // STRONG NEGATIVE SIGNALS
+    // --------------------------------------------------------
+
+    const negativeTerms = [
+        "lot",
+        "reprint",
+        "custom",
+        "proxy",
+        "digital",
+        "replica",
+        "facsimile",
+        "sticker only",
+        "empty",
+        "display",
+        "photo",
+        "print"
+    ];
+
+    for (const term of negativeTerms) {
+        if (listingText.includes(term)) {
+            score -= 25;
+            reasons.push(`negative:${term}`);
+        }
+    }
+
+    // --------------------------------------------------------
+    // SCORE NORMALIZATION
+    // --------------------------------------------------------
+
+    score = Math.max(0, Math.min(100, score));
+
+    return {
+        score,
+        reasons
+    };
+}
+
+
+// ============================================================
+// SEARCH EBAY WITH MATCHING
+// ============================================================
+
+async function searchEbayListings(card) {
+    const queries = buildEbayQueries(card);
+
+    console.log("");
+    console.log("======================================");
+    console.log("CARD FORGE EBAY V12 SEARCH");
+    console.log("======================================");
+    console.log("Card:", {
+        player: card.player,
+        cardName: card.cardName,
+        set: card.set,
+        cardNumber: card.cardNumber,
+        year: card.year,
+        manufacturer: card.manufacturer
+    });
+    console.log("eBay queries:", queries);
+
+    const allResults = [];
+
+    const results = await Promise.all(
+        queries.map(async query => {
+            try {
+                return await searchEbaySingle(
+                    query,
+                    25
+                );
+            } catch (error) {
+                console.error(
+                    `eBay query failed: ${query}`,
+                    error.message
+                );
+
+                return [];
+            }
+        })
+    );
+
+    for (const result of results) {
+        allResults.push(...result);
+    }
+
+    console.log(
+        `eBay raw results found: ${allResults.length}`
+    );
+
+    // --------------------------------------------------------
+    // DEDUPE
+    // --------------------------------------------------------
+
+    const deduped = new Map();
+
+    for (const item of allResults) {
+        const key =
+            item.itemId ||
+            item.itemWebUrl ||
+            item.title;
+
+        if (!key) continue;
+
+        if (!deduped.has(key)) {
+            deduped.set(key, item);
+        }
+    }
+
+    // --------------------------------------------------------
+    // SCORE
+    // --------------------------------------------------------
+
+    const scored = [];
+
+    for (const item of deduped.values()) {
+        const match = scoreEbayListing(
+            item,
+            card
+        );
+
+        scored.push({
+            item,
+            match
+        });
+    }
+
+    // --------------------------------------------------------
+    // SORT BY MATCH FIRST
+    // --------------------------------------------------------
+
+    scored.sort((a, b) => {
+        if (b.match.score !== a.match.score) {
+            return b.match.score - a.match.score;
+        }
+
+        const priceA =
+            Number(a.item.price?.value) || 999999;
+
+        const priceB =
+            Number(b.item.price?.value) || 999999;
+
+        return priceA - priceB;
+    });
+
+    console.log(
+        "Top eBay matches:"
+    );
+
+    scored
+        .slice(0, 15)
+        .forEach((entry, index) => {
+            console.log(
+                `${index + 1}. ${entry.match.score}/100 - ${entry.item.title}`
+            );
+        });
+
+    // --------------------------------------------------------
+    // STRICT FILTER
+    // --------------------------------------------------------
+
+    const strongMatches = scored.filter(
+        entry => entry.match.score >= 55
+    );
+
+    console.log(
+        `Strong eBay matches: ${strongMatches.length}`
+    );
+
+    // --------------------------------------------------------
+    // NORMALIZE OUTPUT
+    // --------------------------------------------------------
+
+    const listings = strongMatches
+        .slice(0, 20)
+        .map(entry => {
+            const item = entry.item;
+
+            return {
+                title: item.title || "eBay Listing",
+
+                price:
+                    item.price?.value || null,
+
+                priceDisplay:
+                    item.price
+                        ? `${item.price.value} ${item.price.currency || "USD"}`
+                        : "Price unavailable",
+
+                image:
+                    item.image?.imageUrl ||
+                    item.thumbnailImages?.[0]?.imageUrl ||
+                    null,
+
+                url:
+                    item.itemWebUrl ||
+                    item.itemHref ||
+                    null,
+
+                condition:
+                    item.condition ||
+                    "Unknown",
+
+                itemId:
+                    item.itemId || null,
+
+                matchScore:
+                    entry.match.score
+            };
+        });
+
+    console.log(
+        `eBay listings returned to CardForge: ${listings.length}`
+    );
+
+    console.log("======================================");
+    console.log("");
 
     return listings;
 }
 
-/* =========================================================
-   AI CARD ANALYSIS
-========================================================= */
 
-app.post(
-    "/api/analyze-card",
-    async (req, res) => {
+// ============================================================
+// AI CARD ANALYSIS
+// ============================================================
 
-        console.log("");
+async function analyzeCardWithAI(frontImage, backImage) {
+    const prompt = `
+You are the identification engine for CardForge, a universal collectible card scanner.
 
-        console.log(
-            "======================================"
-        );
-
-        console.log(
-            "       CARDFORGE V9 ANALYSIS"
-        );
-
-        console.log(
-            "======================================"
-        );
-
-        try {
-
-            const {
-                frontImage,
-                backImage
-            } = req.body;
-
-            if (
-                !frontImage ||
-                !backImage
-            ) {
-
-                return res.status(400).json({
-                    success: false,
-                    error:
-                        "Both front and back images are required."
-                });
-            }
-
-            console.log(
-                "Front image received."
-            );
-
-            console.log(
-                "Back image received."
-            );
-
-            const prompt = `
-
-You are CardForge, a professional universal collectible-card identification system.
-
-Identify ANY collectible card from the supplied front and back photographs.
+Identify the card as accurately as possible.
 
 The card may be:
-
 - Sports
-- Pokemon
+- Pokémon
 - Magic: The Gathering
 - Yu-Gi-Oh!
 - One Piece
-- Disney Lorcana
+- Lorcana
 - Digimon
 - Dragon Ball
 - Star Wars
-- Gaming
-- Movies
-- Television
-- Comics
-- Vintage
 - Entertainment
-- Promotional
-- Historical
-- Other collectible cards
+- Gaming
+- Vintage
+- Or another collectible card.
 
-IMPORTANT:
-
-Analyze BOTH images.
-
-Do not assume this is a sports card.
-
-Identify the card as specifically as the photographs allow.
-
-NEVER invent information.
-
-If something cannot be confidently determined, return "Unknown".
-
-Carefully inspect:
-
-- Card name
-- Player
-- Character
-- Team
-- Sport
-- Set
-- Manufacturer
-- Publisher
-- Year
-- Card number
-- Rarity
-- Parallel
-- Variant
-- Edition
-- First Edition
-- Rookie designation
-- Serial numbering
-- Autograph
-- Memorabilia
-- Language
-- Special symbols
-- Holographic features
-- Foiling
-- Copyright information
-- Front text
-- Back text
-- Statistics
-- Logos
-- Grading information
-
-If graded, identify:
-
-- Grading company
-- Grade
-
-Do NOT estimate the card's market value from the photographs.
-
-Market value will be researched separately.
-
-Give a confidence score from 0 to 100.
-
-Give evidence supporting the identification.
-
-Create a concise marketplace search query that should find the exact card.
+Do NOT guess a specific value.
 
 Return ONLY valid JSON.
 
-Use exactly this structure:
+Use this exact structure:
 
 {
-  "cardType": "",
-  "category": "",
   "cardName": "",
-  "playerOrCharacter": "",
-  "sport": "",
+  "player": "",
   "team": "",
-  "year": "",
-  "manufacturer": "",
+  "franchise": "",
   "set": "",
+  "series": "",
+  "manufacturer": "",
+  "year": "",
   "cardNumber": "",
+  "insert": "",
+  "parallel": "",
   "rarity": "",
-  "parallelOrVariant": "",
-  "edition": "",
-  "language": "",
-  "serialNumber": "",
-  "rookie": null,
-  "firstEdition": null,
-  "autograph": null,
-  "memorabilia": null,
-  "graded": null,
-  "gradingCompany": "",
-  "grade": "",
-  "specialFeatures": [],
-  "confidence": 0,
-  "description": "",
-  "identificationEvidence": [],
-  "searchQuery": "",
-  "estimatedValue": "Pending market research",
-  "valueConfidence": 0,
-  "notes": ""
+  "cardType": "",
+  "sport": "",
+  "confidence": 0
 }
 
+Rules:
+- Use empty strings when a field cannot be determined.
+- Do not invent card numbers.
+- Do not invent parallels.
+- Do not confuse the base card with an insert.
+- Pay close attention to the exact set and year.
+- Pay close attention to visible card numbers.
+- For sports cards, identify player and team.
+- For Pokémon/TCG cards, identify the exact character/card name, set, number, rarity and franchise when visible.
+- Confidence should be 0-100.
 `;
 
-            console.log(
-                "Sending card images to OpenAI..."
-            );
-
-            const response =
-                await openai.responses.create({
-
-                    model:
-                        OPENAI_MODEL,
-
-                    input: [
-                        {
-                            role: "user",
-
-                            content: [
-
-                                {
-                                    type:
-                                        "input_text",
-
-                                    text:
-                                        prompt
-                                },
-
-                                {
-                                    type:
-                                        "input_text",
-
-                                    text:
-                                        "IMAGE 1: FRONT OF CARD"
-                                },
-
-                                {
-                                    type:
-                                        "input_image",
-
-                                    image_url:
-                                        frontImage
-                                },
-
-                                {
-                                    type:
-                                        "input_text",
-
-                                    text:
-                                        "IMAGE 2: BACK OF CARD"
-                                },
-
-                                {
-                                    type:
-                                        "input_image",
-
-                                    image_url:
-                                        backImage
-                                }
-
-                            ]
-                        }
-                    ]
-                });
-
-            const output =
-                response.output_text;
-
-            let cardData;
-
-            try {
-
-                cardData =
-                    JSON.parse(output);
-
-            } catch (error) {
-
-                console.error(
-                    "AI returned invalid JSON:"
-                );
-
-                console.error(
-                    output
-                );
-
-                return res.status(500).json({
-
-                    success:
-                        false,
-
-                    error:
-                        "The AI returned invalid card analysis."
-                });
+    const content = [
+        {
+            type: "text",
+            text: prompt
+        },
+        {
+            type: "image_url",
+            image_url: {
+                url: frontImage
             }
+        }
+    ];
 
-            console.log(
-                "Card identified:"
-            );
-
-            console.log(
-                cardData.searchQuery
-            );
-
-            /* =================================================
-               EBAY SEARCH
-            ================================================= */
-
-            let ebayListings = [];
-
-            let ebayError = null;
-
-            try {
-
-                if (
-                    cardData.searchQuery &&
-                    EBAY_APP_ID &&
-                    EBAY_CERT_ID
-                ) {
-
-                    ebayListings =
-                        await searchEbayListings(
-                            cardData.searchQuery
-                        );
-
-                } else {
-
-                    ebayError =
-                        "eBay credentials or search query missing.";
-                }
-
-            } catch (error) {
-
-                console.error(
-                    "eBay search failed:"
-                );
-
-                console.error(
-                    error.message
-                );
-
-                ebayError =
-                    error.message;
+    if (backImage) {
+        content.push({
+            type: "image_url",
+            image_url: {
+                url: backImage
             }
+        });
+    }
 
-            console.log(
-                `eBay listings found: ${ebayListings.length}`
-            );
-
-            console.log(
-                "======================================"
-            );
-
-            res.json({
-
-                success:
-                    true,
-
-                card:
-                    cardData,
-
-                ebay: {
-
-                    success:
-                        ebayListings.length > 0,
-
-                    listings:
-                        ebayListings,
-
-                    error:
-                        ebayError
+    const response =
+        await openai.chat.completions.create({
+            model: "gpt-4.1-mini",
+            response_format: {
+                type: "json_object"
+            },
+            messages: [
+                {
+                    role: "user",
+                    content
                 }
-            });
+            ],
+            max_tokens: 1000
+        });
 
-        } catch (error) {
+    const text =
+        response.choices?.[0]?.message?.content;
 
-            console.error("");
+    if (!text) {
+        throw new Error(
+            "AI did not return card information."
+        );
+    }
 
-            console.error(
-                "======================================"
-            );
+    return JSON.parse(text);
+}
 
-            console.error(
-                "       CARDFORGE V9 ERROR"
-            );
 
-            console.error(
-                "======================================"
-            );
+// ============================================================
+// MAIN CARD ANALYSIS ROUTE
+// ============================================================
 
-            console.error(
-                error
-            );
+app.post("/api/analyze-card", async (req, res) => {
+    try {
+        console.log("");
+        console.log("======================================");
+        console.log("CARDFORGE V12 ANALYSIS");
+        console.log("======================================");
 
-            console.error(
-                "======================================"
-            );
+        const {
+            frontImage,
+            backImage
+        } = req.body;
 
-            res.status(500).json({
-
-                success:
-                    false,
-
-                error:
-                    error.message ||
-                    "Unknown CardForge backend error."
+        if (!frontImage) {
+            return res.status(400).json({
+                error: "Front image is required."
             });
         }
-    }
-);
 
-/* =========================================================
-   START SERVER
-========================================================= */
+        console.log("Analyzing card with AI...");
+
+        const card =
+            await analyzeCardWithAI(
+                frontImage,
+                backImage
+            );
+
+        console.log("Card identified:");
+        console.log(card);
+
+        let ebayListings = [];
+
+        if (EBAY_APP_ID && EBAY_CERT_ID) {
+            try {
+                ebayListings =
+                    await searchEbayListings(card);
+            } catch (error) {
+                console.error(
+                    "eBay search failed:",
+                    error.message
+                );
+            }
+        }
+
+        res.json({
+            success: true,
+            card,
+            ebayListings
+        });
+
+    } catch (error) {
+        console.error(
+            "CardForge analysis error:",
+            error
+        );
+
+        res.status(500).json({
+            error:
+                error.message ||
+                "Something went wrong analyzing the card."
+        });
+    }
+});
+
+
+// ============================================================
+// START SERVER
+// ============================================================
 
 app.listen(
     PORT,
     "0.0.0.0",
     () => {
-
-        console.log("");
-
         console.log(
-            "======================================"
+            `CardForge V12 listening on port ${PORT}`
         );
-
-        console.log(
-            "        CARDFORGE V9 BACKEND"
-        );
-
-        console.log(
-            "======================================"
-        );
-
-        console.log(
-            `Server running on port ${PORT}`
-        );
-
-        console.log(
-            `AI model: ${OPENAI_MODEL}`
-        );
-
-        console.log(
-            `eBay configured: ${
-                !!(EBAY_APP_ID && EBAY_CERT_ID)
-            }`
-        );
-
-        console.log(
-            `eBay notification verification configured: ${
-                !!(
-                    EBAY_VERIFICATION_TOKEN &&
-                    EBAY_NOTIFICATION_ENDPOINT
-                )
-            }`
-        );
-
-        console.log(
-            `eBay endpoint: ${EBAY_ENDPOINT}`
-        );
-
-        console.log(
-            "======================================"
-        );
-
-        console.log("");
     }
 );
