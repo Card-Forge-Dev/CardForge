@@ -6,24 +6,44 @@ const OpenAI = require("openai");
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
 
-// ======================================
-// MIDDLEWARE
-// ======================================
+/*
+========================================
+SERVER CONFIGURATION
+========================================
+*/
+
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json({ limit: "20mb" }));
 
-// Serve CardForge website
+app.use(
+    express.json({
+        limit: "20mb"
+    })
+);
+
+/*
+========================================
+SERVE CARDFORGE WEBSITE
+========================================
+*/
+
 app.use(express.static(__dirname));
 
-// ======================================
-// OPENAI
-// ======================================
+
+/*
+========================================
+OPENAI CONFIGURATION
+========================================
+*/
 
 if (!process.env.OPENAI_API_KEY) {
-    console.error("ERROR: OPENAI_API_KEY is missing from .env");
+
+    console.error(
+        "ERROR: OPENAI_API_KEY is missing."
+    );
+
 }
 
 const client = new OpenAI({
@@ -31,54 +51,113 @@ const client = new OpenAI({
 });
 
 const MODEL =
-    process.env.OPENAI_MODEL || "gpt-4.1-mini";
+    process.env.OPENAI_MODEL ||
+    "gpt-4.1-mini";
 
 
-// ======================================
-// HEALTH CHECK
-// ======================================
+/*
+========================================
+HEALTH CHECK
+========================================
+*/
 
-app.get("/api/health", (req, res) => {
+app.get(
+    "/api/health",
+    (req, res) => {
 
-    res.json({
-        success: true,
-        message: "CardForge backend is running.",
-        version: "V7",
-        ai: true
-    });
+        res.json({
 
-});
+            success: true,
+
+            message:
+                "CardForge backend is running.",
+
+            version:
+                "V7",
+
+            ai:
+                true
+
+        });
+
+    }
+);
 
 
-// ======================================
-// AI CARD ANALYSIS
-// ======================================
+/*
+========================================
+AI CARD ANALYSIS
+========================================
+*/
 
-app.post("/api/analyze-card", async (req, res) => {
+app.post(
+    "/api/analyze-card",
+    async (req, res) => {
 
-    console.log("");
-    console.log("======================================");
-    console.log("        CARDFORGE AI ANALYSIS");
-    console.log("======================================");
+        console.log("");
+        console.log(
+            "======================================"
+        );
+        console.log(
+            "        CARDFORGE AI ANALYSIS"
+        );
+        console.log(
+            "======================================"
+        );
 
-    try {
 
-        const { frontImage, backImage } = req.body;
+        try {
 
-        if (!frontImage || !backImage) {
+            const {
+                frontImage,
+                backImage
+            } = req.body;
 
-            return res.status(400).json({
-                success: false,
-                error: "Both front and back images are required."
-            });
 
-        }
+            /*
+            --------------------------------
+            CHECK IMAGES
+            --------------------------------
+            */
 
-        console.log("Front image received.");
-        console.log("Back image received.");
-        console.log("Sending images to AI...");
+            if (
+                !frontImage ||
+                !backImage
+            ) {
 
-        const prompt = `
+                return res.status(400).json({
+
+                    success: false,
+
+                    error:
+                        "Both front and back images are required."
+
+                });
+
+            }
+
+
+            console.log(
+                "Front image received."
+            );
+
+            console.log(
+                "Back image received."
+            );
+
+            console.log(
+                "Sending images to AI..."
+            );
+
+
+            /*
+            --------------------------------
+            AI PROMPT
+            --------------------------------
+            */
+
+            const prompt = `
+
 You are CardForge, a professional universal collectible-card
 identification system.
 
@@ -224,143 +303,260 @@ Use exactly this structure:
   "valueConfidence": 0,
   "notes": ""
 }
+
 `;
 
-        const response = await client.responses.create({
 
-            model: MODEL,
+            /*
+            --------------------------------
+            SEND TO OPENAI
+            --------------------------------
+            */
 
-            input: [
+            const response =
+                await client.responses.create({
 
-                {
-                    role: "user",
+                    model:
+                        MODEL,
 
-                    content: [
-
-                        {
-                            type: "input_text",
-                            text: prompt
-                        },
-
-                        {
-                            type: "input_text",
-                            text: "IMAGE 1: FRONT OF CARD"
-                        },
+                    input: [
 
                         {
-                            type: "input_image",
-                            image_url: frontImage
-                        },
 
-                        {
-                            type: "input_text",
-                            text: "IMAGE 2: BACK OF CARD"
-                        },
+                            role:
+                                "user",
 
-                        {
-                            type: "input_image",
-                            image_url: backImage
+                            content: [
+
+                                {
+
+                                    type:
+                                        "input_text",
+
+                                    text:
+                                        prompt
+
+                                },
+
+                                {
+
+                                    type:
+                                        "input_text",
+
+                                    text:
+                                        "IMAGE 1: FRONT OF CARD"
+
+                                },
+
+                                {
+
+                                    type:
+                                        "input_image",
+
+                                    image_url:
+                                        frontImage
+
+                                },
+
+                                {
+
+                                    type:
+                                        "input_text",
+
+                                    text:
+                                        "IMAGE 2: BACK OF CARD"
+
+                                },
+
+                                {
+
+                                    type:
+                                        "input_image",
+
+                                    image_url:
+                                        backImage
+
+                                }
+
+                            ]
+
                         }
 
                     ]
 
-                }
+                });
 
-            ]
 
-        });
+            /*
+            --------------------------------
+            READ AI RESPONSE
+            --------------------------------
+            */
 
-        const output = response.output_text;
+            const output =
+                response.output_text;
 
-        let cardData;
 
-        try {
+            let cardData;
 
-            cardData = JSON.parse(output);
 
-        } catch (error) {
+            try {
 
-            console.error("AI returned invalid JSON.");
+                cardData =
+                    JSON.parse(output);
 
-            return res.status(500).json({
+            }
 
-                success: false,
+            catch (error) {
 
-                error: "The AI returned an invalid card analysis.",
+                console.error(
+                    "AI returned invalid JSON."
+                );
 
-                raw: output
+                return res.status(500).json({
+
+                    success: false,
+
+                    error:
+                        "The AI returned an invalid card analysis.",
+
+                    raw:
+                        output
+
+                });
+
+            }
+
+
+            /*
+            --------------------------------
+            SUCCESS
+            --------------------------------
+            */
+
+            console.log(
+                "AI analysis completed successfully."
+            );
+
+            console.log(
+                "======================================"
+            );
+
+            console.log("");
+
+
+            res.json({
+
+                success:
+                    true,
+
+                card:
+                    cardData
 
             });
 
         }
 
-        console.log("AI analysis completed successfully.");
-        console.log("======================================");
-        console.log("");
 
-        res.json({
+        /*
+        --------------------------------
+        ERROR HANDLING
+        --------------------------------
+        */
 
-            success: true,
+        catch (error) {
 
-            card: cardData
+            console.log("");
 
-        });
+            console.log(
+                "======================================"
+            );
 
-    } catch (error) {
+            console.log(
+                "        CARDFORGE AI ERROR"
+            );
 
-        console.log("");
-        console.log("======================================");
-        console.log("        CARDFORGE AI ERROR");
-        console.log("======================================");
+            console.log(
+                "======================================"
+            );
 
-        console.error(error);
+            console.error(error);
 
-        console.log("======================================");
-        console.log("");
+            console.log(
+                "======================================"
+            );
 
-        res.status(500).json({
+            console.log("");
 
-            success: false,
 
-            error:
-                error.message ||
-                "Unknown CardForge backend error."
+            res.status(500).json({
 
-        });
+                success:
+                    false,
+
+                error:
+                    error.message ||
+                    "Unknown CardForge backend error."
+
+            });
+
+        }
 
     }
+);
 
-});
 
+/*
+========================================
+START SERVER
+========================================
+*/
 
-// ======================================
-// START SERVER
-// ======================================
+app.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
 
-app.listen(PORT, "0.0.0.0", () => {
+        console.log("");
 
-    console.log("");
-    console.log("======================================");
-    console.log("        CARDFORGE V7 BACKEND");
-    console.log("======================================");
+        console.log(
+            "======================================"
+        );
 
-    console.log(
-        `Website: http://localhost:${PORT}`
-    );
+        console.log(
+            "        CARDFORGE V7 BACKEND"
+        );
 
-    console.log(
-        `Network access enabled on port ${PORT}`
-    );
+        console.log(
+            "======================================"
+        );
 
-    console.log(
-        `Health check: http://localhost:${PORT}/api/health`
-    );
+        console.log(
+            `Server running on port ${PORT}`
+        );
 
-    console.log(
-        `AI model: ${MODEL}`
-    );
+        console.log(
+            `Website: http://localhost:${PORT}`
+        );
 
-    console.log("======================================");
-    console.log("");
+        console.log(
+            "Network access enabled."
+        );
 
-});
+        console.log(
+            `Health check: /api/health`
+        );
+
+        console.log(
+            `AI model: ${MODEL}`
+        );
+
+        console.log(
+            "======================================"
+        );
+
+        console.log("");
+
+    }
+);
+
