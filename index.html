@@ -1,1521 +1,1014 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#080b12">
-  <title>CardForge | AI Card Scanner</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #080b12;
-      --panel: #101622;
-      --panel2: #151d2b;
-      --border: #253147;
-      --text: #f4f7ff;
-      --muted: #95a3ba;
-      --blue: #5b8cff;
-      --cyan: #4de2d0;
-      --green: #58dda4;
-      --red: #ff7c89;
-      --radius: 18px;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(ellipse at 10% 0%, #14213b 0, transparent 38%),
-        radial-gradient(ellipse at 95% 15%, #102d32 0, transparent 30%),
-        var(--bg);
-      color: var(--text);
-      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        sans-serif;
-      line-height: 1.5;
-    }
-
-    button, input { font: inherit; }
-
-    button { cursor: pointer; }
-
-    .shell {
-      width: min(1200px, calc(100% - 32px));
-      margin: auto;
-    }
-
-    header {
-      min-height: 76px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      border-bottom: 1px solid #ffffff10;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 21px;
-      font-weight: 850;
-      letter-spacing: -.7px;
-    }
-
-    .brand-icon {
-      width: 42px;
-      height: 42px;
-      display: grid;
-      place-items: center;
-      border-radius: 13px;
-      background: linear-gradient(135deg, var(--blue), var(--cyan));
-      color: #06101a;
-      font-size: 22px;
-      box-shadow: 0 0 30px #5b8cff30;
-    }
-
-    .brand span span { color: var(--cyan); }
-
-    .status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 12px;
-      border: 1px solid var(--border);
-      background: #101622b8;
-      padding: 8px 12px;
-      border-radius: 999px;
-    }
-
-    .dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 10px #58dda477;
-    }
-
-    .hero {
-      padding: 38px 0 25px;
-    }
-
-    .eyebrow {
-      color: var(--cyan);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    h1 {
-      font-size: clamp(31px, 5vw, 48px);
-      line-height: 1.08;
-      letter-spacing: -1.8px;
-      margin: 9px 0 12px;
-    }
-
-    h1 span {
-      color: transparent;
-      background: linear-gradient(90deg, var(--blue), var(--cyan));
-      background-clip: text;
-      -webkit-background-clip: text;
-    }
-
-    .hero p {
-      max-width: 650px;
-      color: var(--muted);
-      margin: 0;
-      font-size: 14px;
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 360px minmax(0, 1fr);
-      gap: 20px;
-      align-items: start;
-      padding-bottom: 60px;
-    }
-
-    .panel {
-      background: linear-gradient(145deg, #121a29ed, #0e1420ed);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      box-shadow: 0 18px 50px #00000018;
-    }
-
-    .panel-head {
-      padding: 19px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-    }
-
-    h2, h3, p { margin-top: 0; }
-
-    h2 {
-      font-size: 15px;
-      margin-bottom: 0;
-    }
-
-    h3 {
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
-
-    .step {
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-    }
-
-    .panel-body { padding: 20px; }
-
-    .upload-box {
-      display: block;
-      position: relative;
-      border: 1px dashed #435570;
-      background: #0a101b;
-      border-radius: 14px;
-      min-height: 165px;
-      margin-bottom: 12px;
-      overflow: hidden;
-      transition: border-color .2s, background .2s;
-    }
-
-    .upload-box:hover,
-    .upload-box.dragging {
-      border-color: var(--cyan);
-      background: #11202a;
-    }
-
-    .upload-box input {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      opacity: 0;
-    }
-
-    .upload-content {
-      min-height: 165px;
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      gap: 5px;
-    }
-
-    .upload-symbol { font-size: 29px; }
-
-    .upload-title {
-      font-size: 13px;
-      font-weight: 750;
-    }
-
-    .upload-sub {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .preview {
-      display: none;
-      width: 100%;
-      max-height: 270px;
-      object-fit: contain;
-      background: #070a10;
-    }
-
-    .upload-box.has-image .preview { display: block; }
-
-    .upload-box.has-image .upload-content {
-      min-height: auto;
-      padding: 10px;
-    }
-
-    .upload-box.has-image .upload-symbol { display: none; }
-
-    .file-name {
-      display: block;
-      max-width: 100%;
-      overflow-wrap: anywhere;
-      color: var(--cyan);
-      font-size: 11px;
-    }
-
-    .field-label {
-      display: block;
-      margin: 17px 0 7px;
-      color: #c7d2e5;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .text-input {
-      width: 100%;
-      padding: 12px;
-      color: var(--text);
-      background: #090f19;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      outline: none;
-    }
-
-    .text-input:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px #5b8cff18;
-    }
-
-    .help {
-      margin: 8px 0 17px;
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    .primary, .secondary {
-      width: 100%;
-      min-height: 46px;
-      border-radius: 11px;
-      font-weight: 800;
-      font-size: 13px;
-      transition: transform .15s, opacity .15s;
-    }
-
-    .primary {
-      border: 0;
-      color: #07101a;
-      background: linear-gradient(100deg, var(--blue), var(--cyan));
-      box-shadow: 0 8px 24px #5b8cff24;
-    }
-
-    .secondary {
-      border: 1px solid var(--border);
-      background: #111a28;
-      color: var(--text);
-      margin-top: 9px;
-    }
-
-    .primary:hover, .secondary:hover { transform: translateY(-1px); }
-
-    button:disabled {
-      cursor: not-allowed;
-      opacity: .55;
-      transform: none;
-    }
-
-    .notice {
-      display: none;
-      padding: 12px 14px;
-      border-radius: 11px;
-      margin-top: 14px;
-      font-size: 12px;
-      overflow-wrap: anywhere;
-    }
-
-    .notice.show { display: block; }
-
-    .notice.error {
-      background: #351820;
-      border: 1px solid #763440;
-      color: #ffb9c1;
-    }
-
-    .notice.info {
-      background: #122638;
-      border: 1px solid #254d69;
-      color: #b5e6ff;
-    }
-
-    .notice.success {
-      background: #102d25;
-      border: 1px solid #24644d;
-      color: #9af0ca;
-    }
-
-    .right-column {
-      display: grid;
-      gap: 20px;
-      min-width: 0;
-    }
-
-    .empty {
-      padding: 48px 20px;
-      text-align: center;
-    }
-
-    .empty-icon {
-      width: 64px;
-      height: 64px;
-      display: grid;
-      place-items: center;
-      margin: 0 auto 14px;
-      border-radius: 20px;
-      background: #17253b;
-      font-size: 29px;
-    }
-
-    .empty h2 { font-size: 17px; margin-bottom: 7px; }
-
-    .empty p {
-      max-width: 360px;
-      margin: auto;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .hidden { display: none !important; }
-
-    .result-top {
-      padding: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 12px;
-    }
-
-    .result-title {
-      font-size: 21px;
-      font-weight: 850;
-      letter-spacing: -.5px;
-      overflow-wrap: anywhere;
-      margin-bottom: 5px;
-    }
-
-    .subline {
-      color: var(--muted);
-      font-size: 12px;
-      overflow-wrap: anywhere;
-    }
-
-    .confidence {
-      flex-shrink: 0;
-      border: 1px solid #28624e;
-      color: var(--green);
-      background: #102d25;
-      border-radius: 10px;
-      padding: 9px 11px;
-      text-align: center;
-      min-width: 75px;
-    }
-
-    .confidence strong {
-      display: block;
-      font-size: 18px;
-    }
-
-    .confidence small {
-      font-size: 9px;
-      letter-spacing: 1px;
-    }
-
-    .divider { height: 1px; background: var(--border); }
-
-    .section { padding: 20px; }
-
-    .section-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 15px;
-    }
-
-    .section-title h3 { margin: 0; }
-
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 5px 8px;
-      border: 1px solid var(--border);
-      background: #0b111b;
-      color: #c5d2e6;
-      border-radius: 7px;
-      font-size: 10px;
-      font-weight: 750;
-    }
-
-    .facts {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .fact {
-      min-width: 0;
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: 11px;
-      background: #0c121d;
-    }
-
-    .fact-label {
-      font-size: 10px;
-      color: var(--muted);
-      margin-bottom: 4px;
-    }
-
-    .fact-value {
-      font-size: 12px;
-      font-weight: 700;
-      overflow-wrap: anywhere;
-      white-space: pre-wrap;
-    }
-
-    .evidence-list {
-      margin: 0;
-      padding-left: 19px;
-      color: #c8d3e4;
-      font-size: 12px;
-    }
-
-    .evidence-list li { margin: 7px 0; }
-
-    .muted { color: var(--muted); }
-
-    .price-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .price-card {
-      padding: 14px;
-      background: #0c121d;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      min-width: 0;
-    }
-
-    .price-label {
-      color: var(--muted);
-      font-size: 10px;
-      margin-bottom: 5px;
-    }
-
-    .price-value {
-      font-size: clamp(16px, 2vw, 23px);
-      font-weight: 850;
-      letter-spacing: -.5px;
-      overflow-wrap: anywhere;
-    }
-
-    .price-card.median {
-      background: linear-gradient(145deg, #12263a, #10201f);
-      border-color: #2e5c6b;
-    }
-
-    .price-note {
-      font-size: 11px;
-      color: var(--muted);
-      margin: 12px 0 0;
-    }
-
-    .listing-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .listing {
-      border: 1px solid var(--border);
-      border-radius: 13px;
-      overflow: hidden;
-      background: #0b111b;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .listing-image-wrap {
-      height: 190px;
-      display: grid;
-      place-items: center;
-      background: #070b12;
-      border-bottom: 1px solid var(--border);
-      padding: 10px;
-    }
-
-    .listing-image {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
-
-    .image-placeholder {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .listing-body {
-      padding: 13px;
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-    }
-
-    .listing-title {
-      color: #eaf0ff;
-      font-size: 12px;
-      font-weight: 750;
-      line-height: 1.45;
-      overflow-wrap: anywhere;
-      margin-bottom: 9px;
-    }
-
-    .listing-price {
-      color: var(--green);
-      font-size: 20px;
-      font-weight: 850;
-      margin-bottom: 7px;
-    }
-
-    .listing-meta {
-      color: var(--muted);
-      font-size: 10px;
-      margin-bottom: 5px;
-    }
-
-    .match-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      margin: 8px 0 12px;
-    }
-
-    .match {
-      background: #142c29;
-      color: #90e9c7;
-      border: 1px solid #275246;
-      padding: 4px 7px;
-      border-radius: 6px;
-      font-size: 10px;
-      font-weight: 800;
-    }
-
-    .match-reasons {
-      color: var(--muted);
-      font-size: 10px;
-      margin-bottom: 12px;
-    }
-
-    .listing-link {
-      display: block;
-      text-align: center;
-      text-decoration: none;
-      color: #08111b;
-      background: linear-gradient(100deg, var(--blue), var(--cyan));
-      border-radius: 8px;
-      padding: 10px;
-      font-size: 11px;
-      font-weight: 850;
-      margin-top: auto;
-    }
-
-    .listing-link:hover { filter: brightness(1.1); }
-
-    .alternatives {
-      display: grid;
-      gap: 10px;
-    }
-
-    .alternative {
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: #0c121d;
-    }
-
-    .alternative strong { font-size: 12px; }
-
-    .alternative p {
-      margin: 5px 0 0;
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    footer {
-      border-top: 1px solid #ffffff10;
-      color: var(--muted);
-      font-size: 11px;
-      padding: 20px 0 28px;
-      display: flex;
-      justify-content: space-between;
-      gap: 15px;
-      flex-wrap: wrap;
-    }
-
-    .spinner {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      border: 2px solid #07101a55;
-      border-top-color: #07101a;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      vertical-align: -2px;
-      margin-right: 7px;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    @media (max-width: 850px) {
-      .layout { grid-template-columns: 1fr; }
-      .upload-box, .upload-content { min-height: 135px; }
-      .upload-box.has-image .preview { max-height: 300px; }
-    }
-
-    @media (max-width: 520px) {
-      .shell { width: min(100% - 22px, 1200px); }
-      header { min-height: 66px; }
-      .brand { font-size: 18px; }
-      .brand-icon { width: 37px; height: 37px; }
-      .status { font-size: 10px; padding: 7px 9px; }
-      .hero { padding-top: 29px; }
-      .layout { gap: 14px; }
-      .right-column { gap: 14px; }
-      .panel-head, .panel-body, .section, .result-top { padding: 15px; }
-      .listing-grid { grid-template-columns: 1fr; }
-      .listing-image-wrap { height: 230px; }
-      .price-grid { gap: 6px; }
-      .price-card { padding: 10px; }
-      .price-value { font-size: 16px; }
-      .facts { gap: 7px; }
-      .fact { padding: 10px; }
-      .result-title { font-size: 18px; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: .01ms !important;
-        transition-duration: .01ms !important;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080808">
+<title>CardForge | Card Research</title>
+<style>
+:root{color-scheme:dark;--bg:#080808;--panel:#121212;--line:#2b2b2b;--muted:#999;--green:#9cebb0;--amber:#ffd08a;--red:#ff9999}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#f7f7f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.hidden{display:none!important}
+header{position:sticky;top:0;z-index:10;background:#080808ed;backdrop-filter:blur(12px);border-bottom:1px solid #252525}
+.headerInner{max-width:1200px;margin:auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-size:24px;font-weight:850;letter-spacing:-1px;white-space:nowrap}
+.brand span{color:var(--green)}
+nav{display:flex;gap:7px;flex-wrap:wrap}
+nav button,.btn,.smallBtn{background:#171717;border:1px solid #343434;color:#eee;border-radius:10px;padding:10px 12px;font-size:13px}
+nav button.active{background:#fff;color:#000;border-color:#fff}
+main{max-width:1200px;margin:auto;padding:24px 18px 60px}
+.page{display:none}.page.active{display:block}
+.hero{padding:14px 0 20px}
+.eyebrow{font-size:11px;color:var(--green);font-weight:800;letter-spacing:2px;text-transform:uppercase}
+h1{font-size:clamp(32px,6vw,52px);line-height:1.04;letter-spacing:-1.8px;margin:10px 0}
+h2{font-size:23px;letter-spacing:-.5px;margin:0 0 10px}
+h3{font-size:17px;margin:0 0 8px}
+p{line-height:1.55}
+.muted,.hint{color:var(--muted);font-size:13px;line-height:1.5}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:15px;min-width:0}
+.grid2,.grid3,.grid4{display:grid;gap:13px}
+.grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.field{width:100%;min-width:0;background:#080808;color:#fff;border:1px solid #363636;border-radius:10px;padding:12px}
+label{display:block;font-size:12px;color:#aaa;margin:0 0 7px}
+.fieldGroup{min-width:0;margin-bottom:13px}
+.primary{background:#fff;color:#000;border:0;font-weight:800;border-radius:11px;padding:13px 16px}
+.primary.full{width:100%;margin-top:7px}
+.greenButton{background:#17301f;color:#b6f6c5;border:1px solid #345b3c;border-radius:10px;padding:11px 13px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.uploadBox{min-height:230px;position:relative;border:1px dashed #4a4a4a;border-radius:15px;overflow:hidden;background:#090909;display:flex;align-items:center;justify-content:center;text-align:center}
+.uploadBox img{width:100%;height:230px;object-fit:contain}
+.uploadText{padding:20px;color:#aaa;line-height:1.6}
+.uploadText strong{display:block;color:#fff;margin-bottom:6px}
+.uploadBox input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.removeImage{position:absolute;right:8px;top:8px;z-index:2;border:0;border-radius:50%;background:#000;color:#fff;padding:8px 11px}
+.status{min-height:20px;text-align:center;color:#aaa;font-size:13px;margin-top:12px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.stat{background:#090909;border:1px solid #292929;border-radius:12px;padding:13px;min-width:0}
+.statLabel{font-size:11px;color:#888;margin-bottom:6px}
+.statValue{font-size:clamp(18px,3vw,25px);font-weight:800;overflow-wrap:anywhere}
+.statSub{font-size:11px;color:#888;margin-top:5px;line-height:1.4}
+.tag{display:inline-block;padding:5px 8px;background:#202020;border:1px solid #363636;border-radius:7px;font-size:11px;color:#ccc;margin:3px 4px 0 0}
+.tag.good{color:var(--green);border-color:#31563a;background:#102015}
+.tag.warn{color:var(--amber);border-color:#59482b;background:#20190e}
+.tag.bad{color:var(--red);border-color:#593333;background:#201010}
+.cardDetails{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:15px}
+.detail{background:#1a1a1a;border-radius:10px;padding:11px;min-width:0}
+.detail b{display:block;font-size:11px;color:#888;font-weight:500;margin-bottom:6px}
+.detail span{font-size:13px;overflow-wrap:anywhere}
+.evidence{margin:8px 0 0;padding-left:20px;color:#ddd;font-size:13px;line-height:1.6}
+.dealPanel{background:linear-gradient(130deg,#122016,#111 70%);border:1px solid #31553a;border-radius:17px;padding:17px;margin:15px 0}
+.dealTop{display:flex;align-items:center;gap:15px}
+.dial{flex:0 0 82px;width:82px;height:82px;border:5px solid #477a52;border-radius:50%;display:grid;place-items:center;text-align:center;background:#09120b}
+.dial strong{font-size:29px}.dial small{display:block;font-size:10px;color:#aaa}
+.dealTitle{font-size:21px;font-weight:850}
+.listingGrid,.savedGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.listing{background:#101010;border:1px solid #2b2b2b;border-radius:14px;overflow:hidden;min-width:0}
+.listingImage{height:180px;background:#080808;display:grid;place-items:center}
+.listingImage img{width:100%;height:100%;object-fit:contain}
+.listingBody{padding:13px}
+.listingTitle{font-size:13px;line-height:1.45;overflow-wrap:anywhere;min-height:54px}
+.listingPrice{font-size:21px;font-weight:850;margin-top:10px}
+.listingMeta{font-size:11px;color:#999;line-height:1.5;margin-top:6px}
+.listingLink{display:block;text-align:center;text-decoration:none;background:#fff;color:#000;padding:11px;border-radius:9px;font-size:12px;font-weight:800;margin-top:12px}
+.listingDeal{padding:10px;margin-top:10px;border-radius:9px;background:#122016;border:1px solid #31553a;font-size:12px;line-height:1.5}
+.compList{display:grid;gap:9px}
+.comp{display:flex;align-items:center;gap:12px;padding:10px;background:#090909;border:1px solid #292929;border-radius:11px;min-width:0}
+.comp img{width:54px;height:65px;object-fit:contain;background:#151515;border-radius:5px;flex-shrink:0}
+.compInfo{min-width:0;flex:1}.compTitle{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.compMeta{font-size:11px;color:#888;margin-top:5px}.compPrice{font-weight:850;white-space:nowrap}
+.empty{border:1px dashed #383838;padding:23px;text-align:center;color:#888;border-radius:12px;font-size:13px;line-height:1.6}
+.divider{height:1px;background:#2b2b2b;margin:17px 0}
+.savedCard{border:1px solid #2b2b2b;background:#111;border-radius:14px;padding:13px;min-width:0}
+.savedCard h3{overflow-wrap:anywhere}
+.savedMeta{font-size:12px;color:#999;line-height:1.6}
+.toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;transition:.2s;background:#fff;color:#000;border-radius:10px;padding:12px 16px;z-index:100;max-width:90vw;font-size:13px}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:850px){.listingGrid,.savedGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.headerInner{align-items:flex-start;flex-direction:column}.brand{font-size:22px}nav{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}nav button{padding:9px 4px;font-size:11px}main{padding:17px 12px 45px}.panel{padding:14px}.grid2,.grid3,.stats,.cardDetails{grid-template-columns:1fr}.uploadBox,.uploadBox img{height:200px;min-height:200px}.listingGrid,.savedGrid{grid-template-columns:1fr}.listingImage{height:240px}.dealTop{align-items:flex-start}.dial{width:70px;height:70px;flex-basis:70px}.statValue{font-size:23px}}
+</style>
 </head>
-
 <body>
-  <div class="shell">
-    <header>
-      <div class="brand">
-        <div class="brand-icon">⬡</div>
-        <span>Card<span>Forge</span></span>
-      </div>
-      <div class="status">
-        <span class="dot"></span>
-        AI CARD LAB
-        <span class="tag">V13</span>
-      </div>
-    </header>
-
-    <section class="hero">
-      <div class="eyebrow">Your collection, understood</div>
-      <h1>Scan it. Identify it.<br><span>Find the market.</span></h1>
-      <p>
-        Upload your card photos to identify the card, inspect visible details,
-        and compare it against potentially matching active eBay listings.
-      </p>
-    </section>
-
-    <main class="layout">
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Card scanner</h2>
-          <span class="step">STEP 01 / 02</span>
-        </div>
-
-        <div class="panel-body">
-          <label class="upload-box" id="frontBox" for="frontInput">
-            <input id="frontInput" type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif">
-            <img class="preview" id="frontPreview" alt="Front of card preview">
-            <div class="upload-content">
-              <div class="upload-symbol">📸</div>
-              <div class="upload-title">Upload front of card</div>
-              <div class="upload-sub">Click to choose or drag an image here</div>
-              <span class="file-name" id="frontName">JPG, PNG, WEBP or GIF</span>
-            </div>
-          </label>
-
-          <label class="upload-box" id="backBox" for="backInput">
-            <input id="backInput" type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif">
-            <img class="preview" id="backPreview" alt="Back of card preview">
-            <div class="upload-content">
-              <div class="upload-symbol">🔄</div>
-              <div class="upload-title">Upload back of card</div>
-              <div class="upload-sub">Optional, but it can help identify the set</div>
-              <span class="file-name" id="backName">Add a second angle</span>
-            </div>
-          </label>
-
-          <label class="field-label" for="extraNotes">Card notes (optional)</label>
-          <input class="text-input" id="extraNotes"
-            placeholder="e.g. silver border, numbered /99">
-
-          <p class="help">
-            Use clear, well-lit photos. Maximum 12 MB per image.
-            Images are sent to the CardForge server for analysis.
-          </p>
-
-          <button class="primary" id="analyzeButton">
-            ✦ Identify my card
-          </button>
-          <button class="secondary" id="clearButton" type="button">
-            Clear and start over
-          </button>
-
-          <div class="notice" id="notice" role="status" aria-live="polite"></div>
-        </div>
-      </section>
-
-      <div class="right-column">
-        <section class="panel" id="emptyPanel">
-          <div class="empty">
-            <div class="empty-icon">✧</div>
-            <h2>Your next card starts here</h2>
-            <p>
-              Upload the front of a card and select Identify my card.
-              Your identification and matching listing results will appear here.
-            </p>
-          </div>
-        </section>
-
-        <section class="panel hidden" id="identityPanel">
-          <div class="panel-head">
-            <h2>Identification report</h2>
-            <span class="tag" id="reportVersion">CARDFORGE V13</span>
-          </div>
-
-          <div class="result-top">
-            <div>
-              <div class="eyebrow">Card identified</div>
-              <div class="result-title" id="cardTitle">Unknown card</div>
-              <div class="subline" id="cardSubtitle">Analysis complete</div>
-            </div>
-            <div class="confidence">
-              <strong id="confidenceValue">--</strong>
-              <small>CONFIDENCE</small>
-            </div>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="section">
-            <div class="section-title">
-              <h3>Card details</h3>
-              <span class="tag" id="categoryTag">Unclassified</span>
-            </div>
-            <div class="facts" id="factsGrid"></div>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="section">
-            <div class="section-title">
-              <h3>Visible evidence</h3>
-              <span class="tag">PHOTO-BASED</span>
-            </div>
-            <ul class="evidence-list" id="evidenceList"></ul>
-            <p class="muted hidden" id="noEvidence" style="font-size:12px">
-              No additional visual evidence was returned.
-            </p>
-            <p class="muted hidden" id="identificationNotes"
-              style="font-size:12px; margin:12px 0 0"></p>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="section">
-            <div class="section-title">
-              <h3>Condition observations</h3>
-              <span class="tag">NOT A GRADE</span>
-            </div>
-            <div class="facts" id="conditionGrid"></div>
-            <p class="muted" style="font-size:11px; margin:12px 0 0">
-              These are observations from your photos, not a professional
-              grading assessment or authenticity guarantee.
-            </p>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="section hidden" id="alternativesSection">
-            <h3>Other possible identifications</h3>
-            <div class="alternatives" id="alternativesList"></div>
-          </div>
-        </section>
-
-        <section class="panel hidden" id="marketPanel">
-          <div class="panel-head">
-            <h2>Active eBay market</h2>
-            <span class="tag" id="listingCount">0 LISTINGS</span>
-          </div>
-
-          <div class="section">
-            <div class="price-grid">
-              <div class="price-card">
-                <div class="price-label">Lowest asking price</div>
-                <div class="price-value" id="lowPrice">--</div>
-              </div>
-              <div class="price-card median">
-                <div class="price-label">Median asking price</div>
-                <div class="price-value" id="medianPrice">--</div>
-              </div>
-              <div class="price-card">
-                <div class="price-label">Highest asking price</div>
-                <div class="price-value" id="highPrice">--</div>
-              </div>
-            </div>
-
-            <p class="price-note" id="priceNote">
-              Active asking prices are not completed sales or an appraisal.
-            </p>
-
-            <div class="notice" id="ebayNotice"></div>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="section">
-            <div class="section-title">
-              <h3>Potential matches</h3>
-              <span class="tag">MATCHED LISTINGS</span>
-            </div>
-            <div class="listing-grid" id="listingGrid"></div>
-            <div class="empty hidden" id="noListings" style="padding:25px 10px">
-              <div class="empty-icon">⌕</div>
-              <h2>No matching listings found</h2>
-              <p>
-                Try clearer photos or verify the card details. A listing match
-                is not proof that an item is identical to your card.
-              </p>
-            </div>
-          </div>
-        </section>
-      </div>
-    </main>
-
-    <footer>
-      <span>CardForge · AI-assisted card identification</span>
-      <span>Market figures are active asking prices, not verified sales.</span>
-    </footer>
+<header>
+  <div class="headerInner">
+    <div class="brand">Card<span>Forge</span></div>
+    <nav>
+      <button class="active" data-page="scanPage">Scan</button>
+      <button data-page="dashboardPage">Dashboard</button>
+      <button data-page="collectionsPage">Collections</button>
+      <button data-page="showPage">Card Show</button>
+    </nav>
   </div>
+</header>
 
-  <script>
-    const $ = (id) => document.getElementById(id);
+<main>
+  <section id="scanPage" class="page active">
+    <div class="hero">
+      <div class="eyebrow">Collect smarter</div>
+      <h1>Know the card.<br>Know the market.</h1>
+      <p class="muted">Identify a card, compare recent sold prices, review active eBay listings, and evaluate potential deals.</p>
+    </div>
 
-    const state = {
-      front: null,
-      back: null,
-      busy: false
+    <div class="panel">
+      <h2>Scan a card</h2>
+      <p class="muted">Use clear photos. Include the back when possible to help identify the set, card number, parallel, or grading label.</p>
+      <div class="grid2">
+        <div>
+          <label>Front photo · Required</label>
+          <div class="uploadBox" id="frontBox">
+            <div class="uploadText" id="frontText"><strong>Choose front photo</strong>Tap or click to upload</div>
+            <input id="frontInput" type="file" accept="image/*">
+          </div>
+          <button class="smallBtn hidden" id="removeFront" type="button">Remove front photo</button>
+        </div>
+        <div>
+          <label>Back photo · Optional</label>
+          <div class="uploadBox" id="backBox">
+            <div class="uploadText" id="backText"><strong>Choose back photo</strong>Tap or click to upload</div>
+            <input id="backInput" type="file" accept="image/*">
+          </div>
+          <button class="smallBtn hidden" id="removeBack" type="button">Remove back photo</button>
+        </div>
+      </div>
+      <button class="primary full" id="analyzeButton" disabled>Identify card and research market</button>
+      <div id="statusText" class="status" aria-live="polite"></div>
+    </div>
+
+    <div id="results" class="hidden">
+      <div class="row" style="margin:25px 0 12px">
+        <h2 style="margin:0">Card research</h2>
+        <div class="actions">
+          <button class="btn" id="saveCardButton">Save card</button>
+          <button class="btn" id="newScanButton">New scan</button>
+        </div>
+      </div>
+      <div id="cardPanel" class="panel"></div>
+      <div id="dealSection"></div>
+      <div id="soldSection"></div>
+      <div id="activeSection"></div>
+    </div>
+  </section>
+
+  <section id="dashboardPage" class="page">
+    <div class="hero"><div class="eyebrow">Your research</div><h1>Dashboard</h1><p class="muted">A quick view of the cards you've saved locally in this browser.</p></div>
+    <div id="dashboardStats" class="stats"></div>
+    <div class="panel" style="margin-top:15px"><h2>Recently saved</h2><div id="recentCards" class="savedGrid"></div></div>
+    <div class="panel"><h2>Export your data</h2><p class="muted">Download a backup of your saved cards or a spreadsheet-friendly CSV.</p><div class="actions"><button class="primary" id="exportJson">Export JSON</button><button class="btn" id="exportCsv">Export CSV</button></div></div>
+  </section>
+
+  <section id="collectionsPage" class="page">
+    <div class="hero"><div class="eyebrow">Your card library</div><h1>Collections</h1><p class="muted">Saved cards are stored in this browser on this device.</p></div>
+    <div class="panel">
+      <h2>Save a collection</h2>
+      <div class="row">
+        <input id="collectionName" class="field" placeholder="Collection name, e.g. Basketball rookies" style="max-width:500px">
+        <button class="primary" id="createCollection">Create collection</button>
+      </div>
+      <p class="hint">Collections are local to this browser. Clearing browser storage can remove them, so export a backup.</p>
+    </div>
+    <div id="collectionList" class="grid2"></div>
+    <div id="collectionCards"></div>
+    <div class="panel"><h2>All saved cards</h2><div id="allSavedCards" class="savedGrid"></div></div>
+  </section>
+
+  <section id="showPage" class="page">
+    <div class="hero"><div class="eyebrow">At the card show</div><h1>Card Show Mode</h1><p class="muted">Track asking prices, your offers, purchases, and your show budget.</p></div>
+    <div class="panel">
+      <h2>Show setup</h2>
+      <div class="grid2">
+        <div class="fieldGroup"><label for="eventName">Show name</label><input id="eventName" class="field" placeholder="Saturday card show"></div>
+        <div class="fieldGroup"><label for="budget">Budget ($)</label><input id="budget" class="field" type="number" min="0" step=".01" placeholder="250"></div>
+      </div>
+      <div class="actions"><button class="primary" id="startSession">Start / save show</button><button class="btn" id="endSession">End show</button></div>
+      <p class="hint" id="sessionStatus">No show session started yet.</p>
+    </div>
+    <div id="showStats" class="stats"></div>
+    <div class="panel" style="margin-top:15px">
+      <h2>Track a card or deal</h2>
+      <div class="fieldGroup"><label for="showItemName">Card / item</label><input id="showItemName" class="field" placeholder="Player, set, parallel, card number"></div>
+      <div class="grid3">
+        <div class="fieldGroup"><label for="showAsk">Asking price ($)</label><input id="showAsk" class="field" type="number" min="0" step=".01" placeholder="100"></div>
+        <div class="fieldGroup"><label for="showOffer">Your offer ($)</label><input id="showOffer" class="field" type="number" min="0" step=".01" placeholder="75"></div>
+        <div class="fieldGroup"><label for="showPaid">Price paid ($)</label><input id="showPaid" class="field" type="number" min="0" step=".01" placeholder="70"></div>
+      </div>
+      <div class="grid2">
+        <div class="fieldGroup"><label for="showStatus">Status</label><select id="showStatus" class="field"><option value="watching">Watching</option><option value="offered">Offer made</option><option value="purchased">Purchased</option></select></div>
+        <div class="fieldGroup"><label for="showNotes">Notes</label><input id="showNotes" class="field" placeholder="Condition, comp notes, seller details"></div>
+      </div>
+      <button class="primary" id="addShowItem">Add item</button>
+    </div>
+    <div class="panel"><h2>Show list</h2><div id="showItems"></div></div>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+const KEYS = {
+  cards: "cardforge_v15_saved_cards",
+  collections: "cardforge_v15_collections",
+  show: "cardforge_v15_show_session"
+};
+
+let frontData = null;
+let backData = null;
+let currentCard = null;
+let currentListings = [];
+let currentSummary = null;
+let currentSoldComps = null;
+let currentEbayError = null;
+let activeCollection = null;
+let busy = false;
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[char]);
+}
+
+function money(value, currency = "USD") {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "N/A";
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency || "USD",
+      maximumFractionDigits: 2
+    }).format(number);
+  } catch {
+    return "$" + number.toFixed(2);
+  }
+}
+
+function num(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function safeUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function toast(message) {
+  const el = $("toast");
+  el.textContent = message;
+  el.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => el.classList.remove("show"), 2400);
+}
+
+function readStore(key, fallback) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) || "null");
+    return parsed ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStore(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch (error) {
+    console.error("Local save failed:", error);
+    toast("Couldn't save. Browser storage may be full.");
+    return false;
+  }
+}
+
+function allCards() {
+  return readStore(KEYS.cards, []);
+}
+
+function saveCards(cards) {
+  return writeStore(KEYS.cards, cards);
+}
+
+function collections() {
+  return readStore(KEYS.collections, { "My Collection": [] });
+}
+
+function saveCollections(data) {
+  return writeStore(KEYS.collections, data);
+}
+
+function showSession() {
+  return readStore(KEYS.show, null);
+}
+
+function saveShowSession(session) {
+  return writeStore(KEYS.show, session);
+}
+
+function showPage(id) {
+  document.querySelectorAll(".page").forEach(page => page.classList.toggle("active", page.id === id));
+  document.querySelectorAll("nav button").forEach(button => button.classList.toggle("active", button.dataset.page === id));
+  if (id === "dashboardPage") renderDashboard();
+  if (id === "collectionsPage") renderCollections();
+  if (id === "showPage") renderShowMode();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+document.querySelectorAll("[data-page]").forEach(button => {
+  button.addEventListener("click", () => showPage(button.dataset.page));
+});
+
+function imagePreview(side, dataUrl) {
+  const box = $(side + "Box");
+  const input = $(side + "Input");
+  const text = $(side + "Text");
+  const remove = $("remove" + side[0].toUpperCase() + side.slice(1));
+  box.querySelector("img")?.remove();
+  box.querySelector(".removeImage")?.remove();
+
+  if (!dataUrl) {
+    text.classList.remove("hidden");
+    remove.classList.add("hidden");
+    input.value = "";
+    return;
+  }
+
+  text.classList.add("hidden");
+  const img = document.createElement("img");
+  img.src = dataUrl;
+  img.alt = side + " card preview";
+  box.appendChild(img);
+
+  const removeButton = document.createElement("button");
+  removeButton.className = "removeImage";
+  removeButton.type = "button";
+  removeButton.textContent = "×";
+  removeButton.setAttribute("aria-label", "Remove " + side + " photo");
+  removeButton.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (side === "front") frontData = null;
+    else backData = null;
+    imagePreview(side, null);
+    updateAnalyzeButton();
+  });
+  box.appendChild(removeButton);
+  remove.classList.remove("hidden");
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Could not read that image."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleImage(side, file) {
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    toast("Choose an image file.");
+    return;
+  }
+  if (file.size > 12 * 1024 * 1024) {
+    toast("That image is too large. Choose one under 12 MB.");
+    return;
+  }
+  try {
+    const data = await fileToDataUrl(file);
+    if (side === "front") frontData = data;
+    else backData = data;
+    imagePreview(side, data);
+    updateAnalyzeButton();
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+$("frontInput").addEventListener("change", event => handleImage("front", event.target.files?.[0]));
+$("backInput").addEventListener("change", event => handleImage("back", event.target.files?.[0]));
+$("removeFront").addEventListener("click", () => {
+  frontData = null;
+  imagePreview("front", null);
+  updateAnalyzeButton();
+});
+$("removeBack").addEventListener("click", () => {
+  backData = null;
+  imagePreview("back", null);
+  updateAnalyzeButton();
+});
+
+function updateAnalyzeButton() {
+  $("analyzeButton").disabled = !frontData || busy;
+}
+
+function renderCard(card) {
+  const name = card.cardName || card.player || card.franchise || "Unidentified card";
+  const confidence = Math.max(0, Math.min(100, Number(card.confidence) || 0));
+  const details = [
+    ["Player", card.player],
+    ["Team", card.team],
+    ["Year", card.year],
+    ["Manufacturer", card.manufacturer],
+    ["Set", card.set],
+    ["Series", card.series],
+    ["Card number", card.cardNumber],
+    ["Parallel", card.parallel],
+    ["Insert", card.insert],
+    ["Rarity", card.rarity],
+    ["Category", card.category || card.cardType],
+    ["Sport", card.sport],
+    ["Franchise", card.franchise],
+    ["Grading company", card.grader],
+    ["Grade", card.grade],
+    ["Language", card.cardLanguage]
+  ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== "");
+
+  const tags = [];
+  if (card.rookie) tags.push("Rookie");
+  if (card.autograph) tags.push("Autograph");
+  if (card.relic) tags.push("Relic");
+  if (card.gradedCard === true) tags.push("Graded");
+  if (card.gradedCard === false) tags.push("Raw / ungraded");
+
+  $("cardPanel").innerHTML = `
+    <div class="row">
+      <div>
+        <div class="eyebrow">AI identification</div>
+        <h2 style="margin-top:7px">${escapeHtml(name)}</h2>
+        <span class="tag ${confidence >= 80 ? "good" : confidence >= 50 ? "warn" : "bad"}">${confidence}% identification confidence</span>
+        ${tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
+      </div>
+    </div>
+    <div class="cardDetails">
+      ${details.length ? details.map(([label, value]) => `<div class="detail"><b>${escapeHtml(label)}</b><span>${escapeHtml(value)}</span></div>`).join("") : `<div class="detail"><b>Details</b><span>Not identified</span></div>`}
+    </div>
+    ${card.identificationNotes ? `<div class="divider"></div><h3>Identification notes</h3><p class="muted">${escapeHtml(card.identificationNotes)}</p>` : ""}
+    ${card.visibleEvidence?.length ? `<div class="divider"></div><h3>Visible evidence</h3><ul class="evidence">${card.visibleEvidence.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+    ${card.alternatives?.length ? `<div class="divider"></div><h3>Other possible matches</h3>${card.alternatives.map(item => `<div style="margin-top:10px"><strong>${escapeHtml(item.candidate || "Alternative")}</strong><p class="muted">${escapeHtml(item.whyItCouldFit || "")}${item.whatWouldConfirmIt ? " Confirmation: " + escapeHtml(item.whatWouldConfirmIt) : ""}</p></div>`).join("")}` : ""}
+    ${card.conditionObservations?.length ? `<div class="divider"></div><h3>Visible condition observations</h3>${card.conditionObservations.map(item => `<div style="margin-top:10px"><strong>${escapeHtml(item.area || "Observation")}</strong><p class="muted">${escapeHtml(item.observation || "")} · ${escapeHtml(item.certainty || "unknown")} certainty</p></div>`).join("")}${card.conditionLimitations ? `<p class="hint">${escapeHtml(card.conditionLimitations)}</p>` : ""}<p class="hint">Photo observations are not a professional grade or authentication opinion.</p>` : ""}
+  `;
+}
+
+function renderDealScore(sold, listings) {
+  const root = $("dealSection");
+  const median = num(sold?.stats?.median);
+  const count = Number(sold?.stats?.usedForStats ?? sold?.stats?.count ?? sold?.count) || 0;
+
+  if (!sold?.available || median === null || median <= 0 || count < 1) {
+    root.innerHTML = `<div class="dealPanel"><div class="dealTitle">Deal Score</div><p class="dealText">Not enough sold-price evidence is available to calculate a reliable market-based score. Check the sold comps or use the active asking-price range as a rough reference.</p></div>`;
+    return;
+  }
+
+  const priced = listings
+    .map(item => ({ item, price: num(item.price) }))
+    .filter(entry => entry.price !== null && entry.price > 0);
+
+  root.innerHTML = `
+    <div class="dealPanel">
+      <div class="dealTop">
+        <div class="dial"><div><strong>✓</strong><small>COMPS</small></div></div>
+        <div><div class="dealTitle">Sold-price benchmark</div><div class="muted">Based on ${count} sale${count === 1 ? "" : "s"} used in provider statistics.</div></div>
+      </div>
+      <div class="stats" style="margin-top:15px">
+        <div class="stat"><div class="statLabel">Sold median</div><div class="statValue">${money(median)}</div><div class="statSub">Primary benchmark</div></div>
+        <div class="stat"><div class="statLabel">25th percentile</div><div class="statValue">${money(sold.stats.p25)}</div><div class="statSub">Lower middle range</div></div>
+        <div class="stat"><div class="statLabel">75th percentile</div><div class="statValue">${money(sold.stats.p75)}</div><div class="statSub">Upper middle range</div></div>
+      </div>
+      <p class="muted">The benchmark is not an appraisal. Card condition, grading, parallel, authenticity, shipping, and the exact match can materially change value.</p>
+      ${priced.length ? `<p class="muted">Deal estimates below compare each active asking price with this sold median and factor in the backend listing-match score. They do not include tax, shipping, selling fees, or your resale costs.</p>` : ""}
+    </div>
+  `;
+}
+
+function renderSoldComps(sold) {
+  const root = $("soldSection");
+  if (!sold) {
+    root.innerHTML = `<div class="panel"><h2>Recent sold comps</h2><div class="empty">No sold-comps data was returned.</div></div>`;
+    return;
+  }
+
+  const stats = sold.stats || {};
+  const items = Array.isArray(sold.items) ? sold.items : [];
+  const count = Number(stats.usedForStats ?? stats.count ?? sold.count) || 0;
+
+  root.innerHTML = `
+    <div class="panel">
+      <div class="row"><h2>Recent sold comps</h2><span class="tag">${count} sales in stats</span></div>
+      <p class="muted">${escapeHtml(sold.basis || "Sold-listing evidence. Verify each match before relying on a price.")}</p>
+      ${sold.available && num(stats.median) !== null ? `
+        <div class="stats">
+          <div class="stat"><div class="statLabel">Sold median</div><div class="statValue">${money(stats.median)}</div></div>
+          <div class="stat"><div class="statLabel">Middle 50% range</div><div class="statValue" style="font-size:17px">${stats.p25 == null || stats.p75 == null ? "N/A" : money(stats.p25) + " – " + money(stats.p75)}</div></div>
+          <div class="stat"><div class="statLabel">Search window</div><div class="statValue">${Number(sold.days) || 90} days</div></div>
+        </div>` : ""}
+      ${sold.error ? `<p class="hint">${escapeHtml(sold.error)}</p>` : ""}
+      <div class="compList" style="margin-top:14px">
+        ${items.length ? items.slice(0,10).map(item => {
+          const url = safeUrl(item.url);
+          return `<div class="comp">
+            ${safeUrl(item.image) ? `<img src="${escapeHtml(safeUrl(item.image))}" alt="" loading="lazy">` : ""}
+            <div class="compInfo">
+              <div class="compTitle">${escapeHtml(item.title || "Sold eBay listing")}</div>
+              <div class="compMeta">${escapeHtml(item.soldAt ? new Date(item.soldAt).toLocaleDateString() : "Sale date unavailable")} · ${escapeHtml(item.format || "Sale format unavailable")}${item.bestOffer ? " · Best offer" : ""}</div>
+              ${url ? `<div class="compMeta"><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" style="color:#b5eac0">View sale</a></div>` : ""}
+            </div>
+            <div class="compPrice">${money(item.price, item.currency)}</div>
+          </div>`;
+        }).join("") : `<div class="empty">${sold.available ? "No individual sale items were returned for this query." : "Sold comps aren't available. Check your CompsAPI key and the Render logs."}</div>`}
+      </div>
+    </div>
+  `;
+}
+
+function scoreDeal(listing, median, compCount) {
+  const price = num(listing.price);
+  const match = Number(listing.matchScore);
+  if (price === null || price <= 0 || median === null || median <= 0) return null;
+
+  const discount = ((median - price) / median) * 100;
+  const matchFactor = Number.isFinite(match) ? Math.max(0, Math.min(100, match)) : 50;
+  const evidenceFactor = Math.min(1, Math.max(0.35, compCount / 10));
+  const discountPoints = Math.max(0, Math.min(70, 50 + discount * 1.25));
+  const score = Math.round(Math.max(0, Math.min(100,
+    discountPoints * 0.65 + matchFactor * 0.25 + evidenceFactor * 10
+  )));
+
+  let label = "Compare carefully";
+  let tone = "warn";
+  if (discount >= 25 && matchFactor >= 75 && compCount >= 5) {
+    label = "Potential value";
+    tone = "good";
+  } else if (discount < 0 || matchFactor < 55) {
+    label = "Higher risk";
+    tone = "bad";
+  }
+
+  return { score, discount, label, tone, matchFactor };
+}
+
+function renderListings(listings, sold) {
+  const root = $("activeSection");
+  const items = Array.isArray(listings) ? listings : [];
+  const median = num(sold?.stats?.median);
+  const compCount = Number(sold?.stats?.usedForStats ?? sold?.stats?.count ?? sold?.count) || 0;
+
+  root.innerHTML = `
+    <div class="row" style="margin:25px 0 12px"><h2 style="margin:0">Active eBay listings</h2><span class="tag">${items.length} matched</span></div>
+    ${currentEbayError ? `<div class="panel"><p class="muted">${escapeHtml(currentEbayError)}</p></div>` : ""}
+    ${items.length ? `<div class="listingGrid">${items.map(item => {
+      const price = num(item.price);
+      const url = safeUrl(item.url);
+      const image = safeUrl(item.image);
+      const deal = scoreDeal(item, median, compCount);
+      const reasons = Array.isArray(item.matchReasons) ? item.matchReasons : [];
+      return `<article class="listing">
+        <div class="listingImage">${image ? `<img class="listingImage" src="${escapeHtml(image)}" alt="" loading="lazy">` : `<span class="muted">No listing image</span>`}</div>
+        <div class="listingBody">
+          <div class="listingTitle">${escapeHtml(item.title || "eBay listing")}</div>
+          <div class="listingPrice">${money(price, item.currency)}</div>
+          <div class="listingMeta">Condition: ${escapeHtml(item.condition || "Unknown")}</div>
+          <div class="listingMeta">Title match: ${Number(item.matchScore) || 0}/100</div>
+          ${reasons.length ? `<div class="listingMeta">${escapeHtml(reasons.slice(0,3).join(" · "))}</div>` : ""}
+          ${deal ? `<div class="listingDeal"><strong>${deal.score}/100 · ${escapeHtml(deal.label)}</strong><br>${deal.discount >= 0 ? money(median - price) + " below sold median" : money(price - median) + " above sold median"} (${deal.discount.toFixed(1)}%).<br><span class="muted">Estimated research score, not guaranteed profit.</span></div>` : `<div class="listingDeal">No usable price for comparison.</div>`}
+          ${url ? `<a class="listingLink" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">View eBay listing ↗</a>` : `<div class="hint">Listing link unavailable</div>`}
+        </div>
+      </article>`;
+    }).join("")}</div>` : `<div class="empty">No matching active eBay listings were returned. This can happen if the card identification is incomplete or eBay credentials/search are unavailable.</div>`}
+  `;
+}
+
+async function analyzeCard() {
+  if (busy || !frontData) return;
+
+  busy = true;
+  updateAnalyzeButton();
+  $("statusText").textContent = "Identifying card and researching prices…";
+  $("results").classList.remove("hidden");
+  $("cardPanel").innerHTML = `<div class="empty">Analyzing card photos…</div>`;
+  $("dealSection").innerHTML = "";
+  $("soldSection").innerHTML = "";
+  $("activeSection").innerHTML = "";
+  currentCard = null;
+  currentListings = [];
+  currentSummary = null;
+  currentSoldComps = null;
+  currentEbayError = null;
+
+  try {
+    const response = await fetch("/api/analyze-card", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ frontImage: frontData, backImage: backData })
+    });
+
+    const raw = await response.text();
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      throw new Error("The server returned an unreadable response. Check that Render is serving the latest deployment.");
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || `Analysis failed (${response.status}).`);
+    }
+
+    if (!data.card) throw new Error("The server response didn't include card identification.");
+
+    currentCard = data.card;
+    currentListings = Array.isArray(data.ebayListings) ? data.ebayListings : [];
+    currentSummary = data.priceSummary || null;
+    currentSoldComps = data.soldComps || null;
+    currentEbayError = data.ebayError || null;
+
+    renderCard(currentCard);
+    renderDealScore(currentSoldComps, currentListings);
+    renderSoldComps(currentSoldComps);
+    renderListings(currentListings, currentSoldComps);
+
+    $("statusText").textContent = "Analysis complete.";
+    $("results").classList.remove("hidden");
+    setTimeout(() => $("results").scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+  } catch (error) {
+    console.error("CardForge analysis error:", error);
+    $("statusText").textContent = error.message || "Something went wrong.";
+    $("cardPanel").innerHTML = `<div class="empty">${escapeHtml(error.message || "Something went wrong.")}<br><br>Check the Render logs and confirm the required environment variables are configured.</div>`;
+    $("results").classList.remove("hidden");
+  } finally {
+    busy = false;
+    updateAnalyzeButton();
+  }
+}
+
+$("analyzeButton").addEventListener("click", analyzeCard);
+
+$("newScanButton").addEventListener("click", () => {
+  frontData = null;
+  backData = null;
+  currentCard = null;
+  currentListings = [];
+  currentSummary = null;
+  currentSoldComps = null;
+  currentEbayError = null;
+  imagePreview("front", null);
+  imagePreview("back", null);
+  $("results").classList.add("hidden");
+  $("statusText").textContent = "";
+  updateAnalyzeButton();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+function saveCurrentCard() {
+  if (!currentCard) return toast("Scan a card first.");
+
+  const cards = allCards();
+  const saved = {
+    ...currentCard,
+    image: frontData || null,
+    askingPriceSummary: currentSummary,
+    soldCompsSummary: currentSoldComps?.stats || null,
+    savedAt: new Date().toISOString()
+  };
+
+  cards.unshift(saved);
+  if (!saveCards(cards)) return;
+
+  const folderName = prompt("Save to which collection?", "My Collection");
+  if (folderName && folderName.trim()) {
+    const name = folderName.trim();
+    const data = collections();
+    if (!Array.isArray(data[name])) data[name] = [];
+    data[name].unshift(saved);
+    saveCollections(data);
+  }
+
+  toast("Card saved.");
+  renderCollections();
+}
+
+$("saveCardButton").addEventListener("click", saveCurrentCard);
+
+function cardName(card) {
+  return card.cardName || card.player || card.franchise || "Unidentified card";
+}
+
+function cardMeta(card) {
+  return [card.year, card.manufacturer, card.set, card.cardNumber].filter(Boolean).join(" · ");
+}
+
+function cardTile(card, index, source) {
+  const el = document.createElement("article");
+  el.className = "savedCard";
+  const image = safeUrl(card.image);
+  el.innerHTML = `
+    ${image ? `<img src="${escapeHtml(image)}" alt="" loading="lazy" style="width:100%;height:150px;object-fit:contain;background:#080808;border-radius:9px;margin-bottom:10px">` : ""}
+    <h3>${escapeHtml(cardName(card))}</h3>
+    <div class="savedMeta">${escapeHtml(cardMeta(card) || "No extra details")}</div>
+    <div class="savedMeta">Confidence: ${Number(card.confidence) || 0}%</div>
+    <div class="savedMeta">Saved: ${escapeHtml(card.savedAt ? new Date(card.savedAt).toLocaleDateString() : "Date unavailable")}</div>
+    <div class="actions" style="margin-top:12px">
+      <button class="smallBtn detailsBtn">Details</button>
+      <button class="smallBtn deleteBtn">Delete</button>
+    </div>
+  `;
+  el.querySelector(".detailsBtn").addEventListener("click", () => {
+    currentCard = card;
+    currentListings = [];
+    currentSummary = card.askingPriceSummary || null;
+    currentSoldComps = card.soldCompsSummary ? { available: true, stats: card.soldCompsSummary, items: [], days: 90 } : null;
+    currentEbayError = "Rescan this card to refresh active eBay listings and sold comps.";
+    renderCard(card);
+    renderDealScore(currentSoldComps, []);
+    renderSoldComps(currentSoldComps);
+    renderListings([], currentSoldComps);
+    $("results").classList.remove("hidden");
+    showPage("scanPage");
+    $("results").scrollIntoView({ behavior: "smooth" });
+  });
+  el.querySelector(".deleteBtn").addEventListener("click", () => {
+    if (!confirm("Delete this saved card?")) return;
+    if (source === "all") {
+      const cards = allCards();
+      cards.splice(index, 1);
+      saveCards(cards);
+      renderDashboard();
+      renderCollections();
+    } else if (source?.startsWith("collection:")) {
+      const name = source.slice("collection:".length);
+      const data = collections();
+      if (Array.isArray(data[name])) {
+        data[name].splice(index, 1);
+        saveCollections(data);
+      }
+      renderCollections();
+    }
+    toast("Saved card deleted.");
+  });
+  return el;
+}
+
+function renderDashboard() {
+  const cards = allCards();
+  const folders = collections();
+  const priced = cards.map(card => num(card.askingPriceSummary?.median)).filter(value => value !== null && value > 0);
+  const total = priced.reduce((sum, value) => sum + value, 0);
+
+  $("dashboardStats").innerHTML = `
+    <div class="stat"><div class="statLabel">Saved cards</div><div class="statValue">${cards.length}</div></div>
+    <div class="stat"><div class="statLabel">Collections</div><div class="statValue">${Object.keys(folders).length}</div></div>
+    <div class="stat"><div class="statLabel">Cards with active-price data</div><div class="statValue">${priced.length}</div></div>
+  `;
+
+  const recent = cards.slice(0, 6);
+  $("recentCards").innerHTML = "";
+  if (!recent.length) {
+    $("recentCards").innerHTML = `<div class="empty">Your saved cards will appear here.</div>`;
+  } else {
+    recent.forEach((card, index) => $("recentCards").appendChild(cardTile(card, index, "all")));
+  }
+}
+
+function renderCollections() {
+  const data = collections();
+  const list = $("collectionList");
+  list.innerHTML = "";
+
+  Object.entries(data).forEach(([name, cards]) => {
+    const panel = document.createElement("div");
+    panel.className = "panel";
+    panel.innerHTML = `
+      <div class="row"><h3>${escapeHtml(name)}</h3><span class="tag">${Array.isArray(cards) ? cards.length : 0} cards</span></div>
+      <div class="actions">
+        <button class="primary openCollection">Open</button>
+        <button class="btn renameCollection">Rename</button>
+        <button class="btn deleteCollection">Delete</button>
+      </div>
+    `;
+    panel.querySelector(".openCollection").addEventListener("click", () => openCollection(name));
+    panel.querySelector(".renameCollection").addEventListener("click", () => {
+      const newName = prompt("Rename collection:", name)?.trim();
+      if (!newName || newName === name) return;
+      const current = collections();
+      if (Object.prototype.hasOwnProperty.call(current, newName)) return toast("That collection already exists.");
+      current[newName] = current[name];
+      delete current[name];
+      saveCollections(current);
+      renderCollections();
+    });
+    panel.querySelector(".deleteCollection").addEventListener("click", () => {
+      if (!confirm(`Delete collection "${name}" and its cards?`)) return;
+      const current = collections();
+      delete current[name];
+      saveCollections(current);
+      renderCollections();
+      toast("Collection deleted.");
+    });
+    list.appendChild(panel);
+  });
+
+  const all = allCards();
+  $("allSavedCards").innerHTML = "";
+  if (!all.length) {
+    $("allSavedCards").innerHTML = `<div class="empty">No saved cards yet. Scan a card and press Save card.</div>`;
+  } else {
+    all.forEach((card, index) => $("allSavedCards").appendChild(cardTile(card, index, "all")));
+  }
+}
+
+function openCollection(name) {
+  activeCollection = name;
+  const data = collections();
+  const cards = Array.isArray(data[name]) ? data[name] : [];
+  $("collectionCards").innerHTML = `<div class="panel"><div class="row"><h2>${escapeHtml(name)}</h2><button class="btn" id="closeCollection">Close</button></div><div id="collectionCardGrid" class="savedGrid"></div></div>`;
+  $("closeCollection").addEventListener("click", () => {
+    $("collectionCards").innerHTML = "";
+    activeCollection = null;
+  });
+  const grid = $("collectionCardGrid");
+  if (!cards.length) {
+    grid.innerHTML = `<div class="empty">This collection is empty.</div>`;
+  } else {
+    cards.forEach((card, index) => grid.appendChild(cardTile(card, index, "collection:" + name)));
+  }
+  $("collectionCards").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+$("createCollection").addEventListener("click", () => {
+  const name = $("collectionName").value.trim();
+  if (!name) return toast("Enter a collection name.");
+  const data = collections();
+  if (Object.prototype.hasOwnProperty.call(data, name)) return toast("That collection already exists.");
+  data[name] = [];
+  saveCollections(data);
+  $("collectionName").value = "";
+  renderCollections();
+  toast("Collection created.");
+});
+
+function downloadFile(name, contents, type) {
+  const url = URL.createObjectURL(new Blob([contents], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+$("exportJson").addEventListener("click", () => {
+  downloadFile("cardforge-backup.json", JSON.stringify({
+    exportedAt: new Date().toISOString(),
+    cards: allCards(),
+    collections: collections(),
+    showSession: showSession()
+  }, null, 2), "application/json");
+});
+
+$("exportCsv").addEventListener("click", () => {
+  const columns = ["cardName","player","team","year","manufacturer","set","cardNumber","parallel","category","confidence","savedAt"];
+  const cards = allCards();
+  const cell = value => `"${String(value ?? "").replace(/"/g, '""')}"`;
+  const csv = [columns.join(","), ...cards.map(card => columns.map(key => cell(card[key])).join(","))].join("\r\n");
+  downloadFile("cardforge-cards.csv", csv, "text/csv;charset=utf-8");
+});
+
+function renderShowMode() {
+  const session = showSession();
+  $("eventName").value = session?.name || "";
+  $("budget").value = session?.budget ?? "";
+  $("sessionStatus").textContent = session ? `${session.name || "Card show"} · Started ${new Date(session.startedAt).toLocaleString()}${session.ended ? " · Ended" : ""}` : "No show session started yet.";
+
+  const items = session?.items || [];
+  const spent = items.filter(item => item.status === "purchased").reduce((sum, item) => sum + (Number(item.paid) || 0), 0);
+  const budget = num(session?.budget);
+
+  $("showStats").innerHTML = `
+    <div class="stat"><div class="statLabel">Items tracked</div><div class="statValue">${items.length}</div></div>
+    <div class="stat"><div class="statLabel">Purchased</div><div class="statValue">${items.filter(item => item.status === "purchased").length}</div></div>
+    <div class="stat"><div class="statLabel">Spent</div><div class="statValue">${money(spent)}</div></div>
+    <div class="stat"><div class="statLabel">Budget remaining</div><div class="statValue">${budget === null ? "N/A" : money(budget - spent)}</div></div>
+  `;
+
+  const root = $("showItems");
+  root.innerHTML = "";
+  if (!items.length) {
+    root.innerHTML = `<div class="empty">No items tracked yet. Add a card above.</div>`;
+    return;
+  }
+
+  items.slice().reverse().forEach(item => {
+    const el = document.createElement("div");
+    el.className = "comp";
+    el.innerHTML = `
+      <div class="compInfo">
+        <div class="compTitle"><strong>${escapeHtml(item.name)}</strong></div>
+        <div class="compMeta">Status: ${escapeHtml(item.status)} · Ask: ${money(item.ask)} · Offer: ${money(item.offer)} · Paid: ${money(item.paid)}</div>
+        ${item.notes ? `<div class="compMeta">${escapeHtml(item.notes)}</div>` : ""}
+        <div class="actions" style="margin-top:9px">
+          <button class="smallBtn" data-status="watching">Watching</button>
+          <button class="smallBtn" data-status="offered">Offered</button>
+          <button class="smallBtn" data-status="purchased">Purchased</button>
+          <button class="smallBtn removeItem">Remove</button>
+        </div>
+      </div>
+    `;
+    el.querySelectorAll("[data-status]").forEach(button => button.addEventListener("click", () => {
+      const updated = showSession();
+      const found = updated?.items.find(entry => entry.id === item.id);
+      if (found) found.status = button.dataset.status;
+      saveShowSession(updated);
+      renderShowMode();
+    }));
+    el.querySelector(".removeItem").addEventListener("click", () => {
+      if (!confirm("Remove this item from the show list?")) return;
+      const updated = showSession();
+      updated.items = updated.items.filter(entry => entry.id !== item.id);
+      saveShowSession(updated);
+      renderShowMode();
+    });
+    root.appendChild(el);
+  });
+}
+
+$("startSession").addEventListener("click", () => {
+  let session = showSession();
+  if (!session || session.ended) {
+    session = { startedAt: new Date().toISOString(), items: [], ended: false };
+  }
+  session.name = $("eventName").value.trim() || "Card Show";
+  session.budget = $("budget").value === "" ? null : Math.max(0, Number($("budget").value) || 0);
+  session.ended = false;
+  saveShowSession(session);
+  renderShowMode();
+  toast("Show session saved.");
+});
+
+$("endSession").addEventListener("click", () => {
+  const session = showSession();
+  if (!session) return toast("No show session to end.");
+  session.ended = true;
+  session.endedAt = new Date().toISOString();
+  saveShowSession(session);
+  renderShowMode();
+  toast("Show session ended.");
+});
+
+$("addShowItem").addEventListener("click", () => {
+  const name = $("showItemName").value.trim() || (currentCard ? cardName(currentCard) : "");
+  if (!name) return toast("Enter the card or item name.");
+
+  let session = showSession();
+  if (!session || session.ended) {
+    session = {
+      name: $("eventName").value.trim() || "Card Show",
+      budget: $("budget").value === "" ? null : Math.max(0, Number($("budget").value) || 0),
+      startedAt: new Date().toISOString(),
+      ended: false,
+      items: []
     };
-
-    const allowedTypes = new Set([
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/gif"
-    ]);
-
-    function showNotice(message, type = "info") {
-      const notice = $("notice");
-      notice.textContent = message;
-      notice.className = `notice show ${type}`;
-    }
-
-    function hideNotice() {
-      $("notice").textContent = "";
-      $("notice").className = "notice";
-    }
-
-    function showEbayNotice(message, type = "info") {
-      const el = $("ebayNotice");
-      el.textContent = message;
-      el.className = `notice show ${type}`;
-    }
-
-    function hideEbayNotice() {
-      $("ebayNotice").textContent = "";
-      $("ebayNotice").className = "notice";
-    }
-
-    function escapeHTML(value) {
-      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-      })[char]);
-    }
-
-    function displayValue(value, fallback = "Not identified") {
-      if (value === null || value === undefined || value === "") {
-        return fallback;
-      }
-      if (typeof value === "boolean") {
-        return value ? "Yes" : "No";
-      }
-      return String(value);
-    }
-
-    function formatMoney(value, currency = "USD") {
-      const amount = Number(value);
-
-      if (!Number.isFinite(amount)) return "--";
-
-      try {
-        return new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency,
-          maximumFractionDigits: 2
-        }).format(amount);
-      } catch {
-        return `${amount.toFixed(2)} ${currency}`;
-      }
-    }
-
-    function fileToDataURL(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-
-        reader.onload = () => {
-          if (typeof reader.result !== "string") {
-            reject(new Error("The image could not be read."));
-            return;
-          }
-          resolve(reader.result);
-        };
-
-        reader.onerror = () => {
-          reject(new Error("The image could not be read."));
-        };
-
-        reader.readAsDataURL(file);
-      });
-    }
-
-    // Resize large photos before sending them to the API.
-    // This keeps the JSON request smaller and more reliable.
-    async function prepareImage(file) {
-      if (!allowedTypes.has(file.type)) {
-        throw new Error("Choose a JPG, PNG, WEBP, or GIF image.");
-      }
-
-      if (file.size > 12 * 1024 * 1024) {
-        throw new Error("Each image must be smaller than 12 MB.");
-      }
-
-      const originalURL = await fileToDataURL(file);
-
-      // Keep GIFs unchanged so the file reader can handle them safely.
-      if (file.type === "image/gif") {
-        return originalURL;
-      }
-
-      const image = new Image();
-
-      await new Promise((resolve, reject) => {
-        image.onload = resolve;
-        image.onerror = () => reject(
-          new Error("This image could not be opened. Try another photo.")
-        );
-        image.src = originalURL;
-      });
-
-      const maxSide = 1800;
-      const scale = Math.min(
-        1,
-        maxSide / Math.max(image.naturalWidth, image.naturalHeight)
-      );
-
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-
-      const context = canvas.getContext("2d");
-
-      if (!context) {
-        return originalURL;
-      }
-
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-      // JPEG reduces request size for photographs.
-      return canvas.toDataURL("image/jpeg", 0.88);
-    }
-
-    function setSelectedFile(side, file) {
-      if (!file) return;
-
-      const isFront = side === "front";
-      const box = $(isFront ? "frontBox" : "backBox");
-      const preview = $(isFront ? "frontPreview" : "backPreview");
-      const name = $(isFront ? "frontName" : "backName");
-
-      if (!allowedTypes.has(file.type)) {
-        showNotice("Please select a JPG, PNG, WEBP, or GIF image.", "error");
-        return;
-      }
-
-      if (file.size > 12 * 1024 * 1024) {
-        showNotice("Each image must be smaller than 12 MB.", "error");
-        return;
-      }
-
-      state[side] = file;
-      preview.src = URL.createObjectURL(file);
-      preview.alt = `${side} of card preview`;
-      name.textContent = file.name;
-      box.classList.add("has-image");
-
-      hideNotice();
-    }
-
-    function setupUpload(side) {
-      const input = $(side === "front" ? "frontInput" : "backInput");
-      const box = $(side === "front" ? "frontBox" : "backBox");
-
-      input.addEventListener("change", () => {
-        setSelectedFile(side, input.files?.[0]);
-      });
-
-      box.addEventListener("dragover", (event) => {
-        event.preventDefault();
-        box.classList.add("dragging");
-      });
-
-      box.addEventListener("dragleave", () => {
-        box.classList.remove("dragging");
-      });
-
-      box.addEventListener("drop", (event) => {
-        event.preventDefault();
-        box.classList.remove("dragging");
-
-        const file = event.dataTransfer?.files?.[0];
-
-        if (file) setSelectedFile(side, file);
-      });
-    }
-
-    function addFact(container, label, value) {
-      const fact = document.createElement("div");
-      fact.className = "fact";
-
-      const title = document.createElement("div");
-      title.className = "fact-label";
-      title.textContent = label;
-
-      const content = document.createElement("div");
-      content.className = "fact-value";
-      content.textContent = displayValue(value);
-
-      fact.append(title, content);
-      container.appendChild(fact);
-    }
-
-    function renderCard(card, version) {
-      $("emptyPanel").classList.add("hidden");
-      $("identityPanel").classList.remove("hidden");
-      $("reportVersion").textContent = version || "CARDFORGE";
-
-      const title = card.cardName || card.player ||
-        card.franchise || card.category || "Card not fully identified";
-
-      $("cardTitle").textContent = title;
-
-      const subtitle = [
-        card.player,
-        card.team,
-        card.year,
-        card.set
-      ].filter(Boolean).join(" · ");
-
-      $("cardSubtitle").textContent =
-        subtitle || "Review the details and visible evidence below.";
-
-      const confidence = Math.max(
-        0,
-        Math.min(100, Number(card.confidence) || 0)
-      );
-
-      $("confidenceValue").textContent = `${confidence}%`;
-      $("categoryTag").textContent =
-        card.category || card.sport || card.cardType || "Unclassified";
-
-      const fields = [
-        ["Player / Subject", card.player],
-        ["Team", card.team],
-        ["Year", card.year],
-        ["Manufacturer", card.manufacturer],
-        ["Set / Product", card.set],
-        ["Series", card.series],
-        ["Card number", card.cardNumber],
-        ["Insert", card.insert],
-        ["Parallel / Variant", card.parallel],
-        ["Rarity", card.rarity],
-        ["Sport", card.sport],
-        ["Category", card.category || card.cardType],
-        ["Rookie", card.rookie],
-        ["Autograph", card.autograph],
-        ["Relic / Memorabilia", card.relic]
-      ];
-
-      const facts = $("factsGrid");
-      facts.replaceChildren();
-
-      for (const [label, value] of fields) {
-        addFact(facts, label, value);
-      }
-
-      const evidenceList = $("evidenceList");
-      evidenceList.replaceChildren();
-
-      const evidence = Array.isArray(card.visibleEvidence)
-        ? card.visibleEvidence.filter(Boolean)
-        : [];
-
-      evidence.forEach((item) => {
-        const li = document.createElement("li");
-        li.textContent = item;
-        evidenceList.appendChild(li);
-      });
-
-      $("noEvidence").classList.toggle("hidden", evidence.length > 0);
-
-      const notes = $("identificationNotes");
-      notes.textContent = card.identificationNotes || "";
-      notes.classList.toggle("hidden", !card.identificationNotes);
-
-      const conditionGrid = $("conditionGrid");
-      conditionGrid.replaceChildren();
-
-      const observations = Array.isArray(card.conditionObservations)
-        ? card.conditionObservations
-        : [];
-
-      if (!observations.length) {
-        addFact(conditionGrid, "Condition", "Insufficient information");
-      } else {
-        observations.forEach((observation) => {
-          addFact(
-            conditionGrid,
-            observation.area || "Visible area",
-            [
-              observation.observation || "No observation returned",
-              observation.certainty
-                ? `Certainty: ${observation.certainty}`
-                : ""
-            ].filter(Boolean).join(" · ")
-          );
-        });
-      }
-
-      const alternatives = Array.isArray(card.alternatives)
-        ? card.alternatives
-        : [];
-
-      const alternativesSection = $("alternativesSection");
-      const alternativesList = $("alternativesList");
-      alternativesList.replaceChildren();
-
-      alternatives.forEach((item) => {
-        const box = document.createElement("div");
-        box.className = "alternative";
-
-        const title = document.createElement("strong");
-        title.textContent = item.candidate || "Alternative candidate";
-
-        const reason = document.createElement("p");
-        reason.textContent = item.whyItCouldFit || "";
-
-        const confirm = document.createElement("p");
-        confirm.textContent = item.whatWouldConfirmIt
-          ? `What could confirm it: ${item.whatWouldConfirmIt}`
-          : "";
-
-        box.append(title, reason, confirm);
-        alternativesList.appendChild(box);
-      });
-
-      alternativesSection.classList.toggle(
-        "hidden",
-        alternatives.length === 0
-      );
-    }
-
-    function renderMarket(data) {
-      $("marketPanel").classList.remove("hidden");
-
-      const listings = Array.isArray(data.ebayListings)
-        ? data.ebayListings
-        : [];
-
-      const summary = data.priceSummary || {};
-
-      $("listingCount").textContent =
-        `${listings.length} LISTING${listings.length === 1 ? "" : "S"}`;
-
-      $("lowPrice").textContent = formatMoney(summary.low);
-      $("medianPrice").textContent = formatMoney(summary.median);
-      $("highPrice").textContent = formatMoney(summary.high);
-
-      $("priceNote").textContent = summary.basis ||
-        "Active asking prices only. These are not verified sold prices.";
-
-      hideEbayNotice();
-
-      if (data.ebayError) {
-        showEbayNotice(data.ebayError, "error");
-      }
-
-      const grid = $("listingGrid");
-      grid.replaceChildren();
-
-      listings.forEach((item) => {
-        const card = document.createElement("article");
-        card.className = "listing";
-
-        const imageWrap = document.createElement("div");
-        imageWrap.className = "listing-image-wrap";
-
-        if (item.image) {
-          const image = document.createElement("img");
-          image.className = "listing-image";
-          image.src = item.image;
-          image.alt = item.title || "eBay card listing";
-          image.loading = "lazy";
-          image.referrerPolicy = "no-referrer";
-
-          image.onerror = () => {
-            image.remove();
-            const placeholder = document.createElement("span");
-            placeholder.className = "image-placeholder";
-            placeholder.textContent = "Image unavailable";
-            imageWrap.appendChild(placeholder);
-          };
-
-          imageWrap.appendChild(image);
-        } else {
-          const placeholder = document.createElement("span");
-          placeholder.className = "image-placeholder";
-          placeholder.textContent = "No listing image";
-          imageWrap.appendChild(placeholder);
-        }
-
-        const body = document.createElement("div");
-        body.className = "listing-body";
-
-        const title = document.createElement("div");
-        title.className = "listing-title";
-        title.textContent = item.title || "eBay listing";
-
-        const price = document.createElement("div");
-        price.className = "listing-price";
-        price.textContent = item.priceDisplay ||
-          formatMoney(item.price, item.currency || "USD");
-
-        const condition = document.createElement("div");
-        condition.className = "listing-meta";
-        condition.textContent =
-          `Condition: ${item.condition || "Unknown"}`;
-
-        const matchRow = document.createElement("div");
-        matchRow.className = "match-row";
-
-        const score = document.createElement("span");
-        score.className = "match";
-        score.textContent =
-          `Match score: ${Number(item.matchScore) || 0}/100`;
-        matchRow.appendChild(score);
-
-        const reasons = document.createElement("div");
-        reasons.className = "match-reasons";
-
-        reasons.textContent = Array.isArray(item.matchReasons) &&
-          item.matchReasons.length
-          ? item.matchReasons.join(" · ")
-          : "Automated title-based match";
-
-        body.append(title, price, condition, matchRow, reasons);
-
-        if (item.url) {
-          const link = document.createElement("a");
-          link.className = "listing-link";
-          link.href = item.url;
-          link.target = "_blank";
-          link.rel = "noopener noreferrer";
-          link.textContent = "View on eBay ↗";
-          body.appendChild(link);
-        } else {
-          const unavailable = document.createElement("div");
-          unavailable.className = "listing-meta";
-          unavailable.textContent = "Listing link unavailable";
-          body.appendChild(unavailable);
-        }
-
-        card.append(imageWrap, body);
-        grid.appendChild(card);
-      });
-
-      $("noListings").classList.toggle("hidden", listings.length > 0);
-      grid.classList.toggle("hidden", listings.length === 0);
-    }
-
-    async function analyzeCard() {
-      if (state.busy) return;
-
-      if (!state.front) {
-        showNotice("Upload the front of your card first.", "error");
-        return;
-      }
-
-      state.busy = true;
-      hideNotice();
-      hideEbayNotice();
-
-      const button = $("analyzeButton");
-      button.disabled = true;
-      button.innerHTML = '<span class="spinner"></span>Analyzing your card...';
-
-      try {
-        showNotice(
-          "Preparing your images and identifying the card. This can take a little while.",
-          "info"
-        );
-
-        const frontImage = await prepareImage(state.front);
-        const backImage = state.back
-          ? await prepareImage(state.back)
-          : null;
-
-        // V13 expects JSON data URLs, not multipart FormData.
-        const payload = { frontImage, backImage };
-
-        const response = await fetch("/api/analyze-card", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error(
-            data.error ||
-            `Request failed (${response.status}). Check that Render has deployed the V13 backend.`
-          );
-        }
-
-        if (!data.card) {
-          throw new Error("The server did not return card identification data.");
-        }
-
-        renderCard(data.card, data.version);
-        renderMarket(data);
-
-        showNotice(
-          data.ebayError
-            ? "Card identification complete. eBay results need attention."
-            : "Card analysis complete!",
-          data.ebayError ? "info" : "success"
-        );
-
-        $("identityPanel").scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
-      } catch (error) {
-        console.error("CardForge analysis failed:", error);
-        showNotice(
-          error.message || "Something went wrong. Please try again.",
-          "error"
-        );
-      } finally {
-        state.busy = false;
-        button.disabled = false;
-        button.textContent = "✦ Identify my card";
-      }
-    }
-
-    function clearApp() {
-      if (state.busy) return;
-
-      state.front = null;
-      state.back = null;
-
-      for (const side of ["front", "back"]) {
-        const input = $(side + "Input");
-        const preview = $(side + "Preview");
-        const name = $(side + "Name");
-        const box = $(side + "Box");
-
-        input.value = "";
-
-        if (preview.src.startsWith("blob:")) {
-          URL.revokeObjectURL(preview.src);
-        }
-
-        preview.removeAttribute("src");
-        box.classList.remove("has-image");
-
-        name.textContent = side === "front"
-          ? "JPG, PNG, WEBP or GIF"
-          : "Add a second angle";
-      }
-
-      $("extraNotes").value = "";
-
-      $("identityPanel").classList.add("hidden");
-      $("marketPanel").classList.add("hidden");
-      $("emptyPanel").classList.remove("hidden");
-
-      hideNotice();
-      hideEbayNotice();
-
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    setupUpload("front");
-    setupUpload("back");
-
-    $("analyzeButton").addEventListener("click", analyzeCard);
-    $("clearButton").addEventListener("click", clearApp);
-
-    // Check whether the deployed server is reachable.
-    async function checkServer() {
-      try {
-        const response = await fetch("/api/health", {
-          cache: "no-store"
-        });
-
-        if (!response.ok) return;
-
-        const data = await response.json();
-
-        if (data.version && data.version !== "V13") {
-          showNotice(
-            `Connected to backend version ${data.version}, not V13. Check your Render deployment.`,
-            "error"
-          );
-        }
-      } catch {
-        // The scanner can still be used; a message will appear if analysis fails.
-      }
-    }
-
-    checkServer();
-  </script>
+  }
+
+  const readNumber = id => $(id).value === "" ? null : Math.max(0, Number($(id).value) || 0);
+  session.items.push({
+    id: Date.now() + "-" + Math.random().toString(36).slice(2),
+    name,
+    ask: readNumber("showAsk"),
+    offer: readNumber("showOffer"),
+    paid: readNumber("showPaid"),
+    status: $("showStatus").value,
+    notes: $("showNotes").value.trim(),
+    createdAt: new Date().toISOString()
+  });
+
+  saveShowSession(session);
+  ["showItemName","showAsk","showOffer","showPaid","showNotes"].forEach(id => $(id).value = "");
+  $("showStatus").value = "watching";
+  renderShowMode();
+  toast("Item added to show list.");
+});
+
+function initialize() {
+  renderDashboard();
+  renderCollections();
+  renderShowMode();
+}
+
+initialize();
+</script>
 </body>
 </html>
